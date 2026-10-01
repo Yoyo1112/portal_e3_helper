@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>E3 Helper UI preview</title>
+<style>body { margin: 0; min-height: 100vh; background: #dfe3ea; font: 14px system-ui; } .note { margin: 0; padding: 24px; color: #333; }</style>
+</head>
+<body>
+<p class="note">Manual UI preview with fixture data. Serve the repository root and open /tests/ui-preview.html (add ?lang=en for English).</p>
+<script>
+// Stubbed extension APIs and sample data: for looking at the sidebar without loading the extension.
+(() => {
+  window.fetch = () => Promise.reject(new Error('Network is disabled in the preview'));
+  const now = Date.now(), H = 3600000, D = 24 * H;
+  const lang = new URLSearchParams(location.search).get('lang') || 'zh-TW';
+  const courses = [
+    { id: 1, fullname: '1151.作業系統概論 Introduction to Operating Systems', summary: 'Processes, scheduling, memory management and file systems.' },
+    { id: 2, fullname: '1151.線性代數 Linear Algebra' },
+    { id: 3, fullname: '1151.資料結構 Data Structures' },
+    { id: 4, fullname: '1151.機率 Probability' }
+  ];
+  const data = {
+    interfaceLanguage: lang, lastSeenVersion: '2.2.0', lastSyncTime: now - 5 * 60000, lastSync: { success: true, timestamp: now - 5 * 60000 },
+    assignments: [
+      { eventId: 'a1', name: 'HW2：Process Scheduling', course: courses[0].fullname, deadline: now + 9.8 * H, url: 'https://e3p.nycu.edu.tw/' },
+      { eventId: 'a2', name: 'Homework 3', course: courses[1].fullname, deadline: now + 2.4 * D, url: 'https://e3p.nycu.edu.tw/' },
+      { eventId: 'a3', name: 'Lab 2：Linked List', course: courses[2].fullname, deadline: now + 5.9 * D, manualStatus: 'submitted', url: 'https://e3p.nycu.edu.tw/' },
+      { eventId: 'manual-4', name: 'Problem Set 2', course: courses[3].fullname, deadline: now + 11.4 * D, isManual: true }
+    ],
+    courses, participantCounts: { 1: { count: 87 }, 2: { count: 112 }, 3: { count: 96 }, 4: { count: 74 } },
+    announcements: [
+      { id: 'n1', title: 'HW2 繳交期限延長至週日', courseName: courses[0].fullname, author: '助教', timestamp: now - 25 * 60000, url: 'https://e3p.nycu.edu.tw/' },
+      { id: 'n2', title: '第 4 週講義已上傳', courseName: courses[2].fullname, author: '助教', timestamp: now - 2 * D, url: 'https://e3p.nycu.edu.tw/' }
+    ],
+    messages: [{ id: 'm1', title: '期中考教室與座位表', courseName: courses[1].fullname, author: '授課教師', timestamp: now - 3 * H, url: 'https://e3p.nycu.edu.tw/' }],
+    readAnnouncements: ['n2'], readMessages: [],
+    notifications: [{ id: 'g1', type: 'grading', title: 'Lab 1：Array & Pointer', message: '課程：1151.資料結構 Data Structures', timestamp: now - D, read: true, url: 'https://e3p.nycu.edu.tw/' }],
+    participantChangeNotifications: [{ id: 'p1', type: 'participant-change', courseId: 2, courseName: courses[1].fullname, diff: -2, oldCount: 114, newCount: 112, timestamp: now - 3 * H, read: false }],
+    urgentAssignmentNotifications: []
+  };
+  data.dailyDigestCache = { day: new Date().setHours(0, 0, 0, 0), language: lang, text: '', items: [...data.announcements.slice(0, 1).map(a => ({ ...a, type: 'announcement' })), ...data.messages.map(m => ({ ...m, type: 'message' }))] };
+  const pick = keys => keys == null ? { ...data } : Object.fromEntries([].concat(keys).filter(k => k in data).map(k => [k, data[k]]));
+  window.chrome = {
+    i18n: { getUILanguage: () => lang },
+    runtime: { id: 'preview', getManifest: () => ({ version: '2.2.0' }), getURL: p => '../' + p, onMessage: { addListener() {} }, sendMessage: (m, cb) => { const r = { success: false }; cb?.(r); return Promise.resolve(r); } },
+    storage: { onChanged: { addListener() {} }, local: { get: async (keys, cb) => { const r = pick(keys); cb?.(r); return r; }, set: async (v, cb) => { Object.assign(data, v); cb?.(); }, remove: async () => {} } }
+  };
+})();
+</script>
+<script src="../jszip.min.js"></script>
+<script src="../i18n.js"></script>
+<script src="../content.js"></script>
+</body>
+</html>
