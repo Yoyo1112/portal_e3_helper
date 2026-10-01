@@ -478,6 +478,7 @@
   "打開側邊欄會自動顯示本版變更，或點此再次查看": "Open the sidebar to see release notes, or click here to view them again",
   "擴充功能剛重新載入。請關閉設定、重新整理此 E3 網頁後再試一次。": "The extension was reloaded. Close Settings, refresh this E3 page and try again.",
   "介面語言": "Interface language",
+  "外觀預設跟隨系統的深淺色；到「更多 → 設定 → 外觀」可固定為淺色或深色。": "Appearance follows your system's light or dark mode by default. To fix it to Light or Dark, open More → Settings → Appearance.",
   "外觀": "Appearance",
   "主題": "Theme",
   "跟隨系統": "Follow system",
