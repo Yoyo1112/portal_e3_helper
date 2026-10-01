@@ -1477,6 +1477,8 @@ style.textContent += `
   /* Shared theme. Follows the system light/dark preference unless a theme is chosen in settings. */
   ${E3_THEME_ROOTS} {
     ${E3_LIGHT_TOKENS}
+    --e3-launcher-bg: #b3261e;
+    --e3-on-launcher: #ffffff;
     --e3-radius: 8px;
     --e3-space-1: 4px;
     --e3-space-2: 8px;
@@ -1574,13 +1576,13 @@ style.textContent += `
   .e3-helper-delete-assignment.e3-helper-secondary:hover { color: var(--e3-danger) !important; }
 
   /* Floating entry */
-  .e3-helper-sidebar-toggle { background: var(--e3-ink); color: var(--e3-on-ink); border: 1px solid var(--e3-border-strong); border-right: 0; border-radius: 12px 0 0 12px; box-shadow: -2px 2px 12px rgb(var(--e3-shadow) / 12%); padding: 10px 12px; min-height: 44px; }
-  .e3-helper-sidebar-toggle:hover, .e3-helper-sidebar-toggle:active { background: var(--e3-ink); transform: none; box-shadow: -2px 2px 12px rgb(var(--e3-shadow) / 12%); }
+  .e3-helper-sidebar-toggle { background: var(--e3-launcher-bg); color: var(--e3-on-launcher); border: 1px solid var(--e3-border-strong); border-right: 0; border-radius: 12px 0 0 12px; box-shadow: -2px 2px 12px rgb(var(--e3-shadow) / 12%); padding: 10px 12px; min-height: 44px; }
+  .e3-helper-sidebar-toggle:hover, .e3-helper-sidebar-toggle:active { background: var(--e3-launcher-bg); transform: none; box-shadow: -2px 2px 12px rgb(var(--e3-shadow) / 12%); }
   .e3-helper-sidebar-toggle,
   .e3-helper-sidebar-toggle .e3-helper-toggle-text,
   .e3-helper-sidebar-toggle .e3-helper-toggle-icon,
-  .e3-helper-sidebar-toggle .e3-helper-icon { color: var(--e3-on-ink) !important; }
-  .e3-helper-sidebar-toggle .e3-helper-icon { stroke: var(--e3-on-ink) !important; }
+  .e3-helper-sidebar-toggle .e3-helper-icon { color: var(--e3-on-launcher) !important; }
+  .e3-helper-sidebar-toggle .e3-helper-icon { stroke: var(--e3-on-launcher) !important; }
   .e3-helper-toggle-icon { display: flex; align-items: center; }
   .e3-helper-toggle-text { font-size: 13px; font-weight: 600; }
   .e3-helper-toggle-badge { background: var(--e3-danger); color: var(--e3-on-danger); border-color: var(--e3-bg); box-shadow: none; }
