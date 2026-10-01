@@ -10,7 +10,7 @@ This guide describes the source in this repository. The store release may not in
 
 ## Features
 
-- A resizable sidebar with a draggable floating button.
+- A resizable sidebar with a draggable floating button, in light and dark themes that follow your system by default.
 - Assignment countdowns, submission status and custom assignments.
 - Course lists, membership statistics, membership changes and grades.
 - Course announcements and system messages, with filters, read status and full previews.
@@ -40,6 +40,8 @@ After updating the source, reload the extension and refresh open webpages. Brows
 The initial interface language follows your browser: Chinese uses Traditional Chinese; other languages use English. To change it, open **More (⋯) → Settings → Interface language**, select **English** or **繁體中文**, and click **Save settings**. Saving a new language refreshes the current page. Refresh other open pages manually.
 
 Your language choice is stored locally. Course names, assignment names and original announcement/message content keep their source text. New AI summaries and daily digests use the selected interface language. Previously saved notifications and release notes may retain the language in which they were created.
+
+Appearance follows your system's light or dark mode by default. To fix it, open **More (⋯) → Settings → Appearance → Theme**, choose **Light** or **Dark**, and click **Save settings**; the change applies immediately, including on the notification settings page. Announcement and message previews stay on a light background in the dark theme so their original colors remain readable.
 
 ## Daily use
 
