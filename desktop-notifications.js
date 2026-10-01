@@ -1,0 +1,24 @@
+// Browser notifications on Chrome; native macOS notifications in the Safari package.
+(function () {
+  const native = !chrome.notifications?.create && chrome.runtime.getURL('').startsWith('safari-web-extension:') && Boolean(chrome.runtime.sendNativeMessage);
+  async function request(action, payload = {}) {
+    const response = await chrome.runtime.sendNativeMessage('com.yoyo1112.nycu-e3-helper', { action, ...payload });
+    if (!response?.success) throw new Error(response?.error || 'Native notification service unavailable');
+    return response;
+  }
+  globalThis.E3DesktopNotifications = {
+    supported: Boolean(chrome.notifications?.create) || native,
+    native,
+    async getPermissionLevel() {
+      if (native) return (await request('notificationStatus')).permission;
+      return chrome.notifications ? chrome.notifications.getPermissionLevel() : 'denied';
+    },
+    async authorize() {
+      return native ? (await request('authorizeNotifications')).permission : this.getPermissionLevel();
+    },
+    async create(id, options, url) {
+      if (native) return request('showNotification', { id, title: options.title, message: options.message, url: url || '' });
+      return chrome.notifications.create(id, options);
+    }
+  };
+})();

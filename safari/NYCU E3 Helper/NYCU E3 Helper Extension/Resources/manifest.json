@@ -5,14 +5,12 @@
   "description": "__MSG_extensionDescription__",
   "permissions": [
     "storage",
-    "downloads",
     "alarms",
-    "notifications"
+    "nativeMessaging"
   ],
   "host_permissions": [
     "https://e3.nycu.edu.tw/*",
     "https://e3p.nycu.edu.tw/*",
-    "http://localhost:11434/*",
     "https://api.openai.com/*",
     "https://translate.googleapis.com/*"
   ],
@@ -47,7 +45,6 @@
   },
   "default_locale": "zh_TW",
   "options_ui": {
-    "page": "notification-settings.html",
-    "open_in_tab": true
+    "page": "notification-settings.html"
   }
 }
