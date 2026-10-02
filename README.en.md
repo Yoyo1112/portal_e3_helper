@@ -10,7 +10,7 @@ This guide describes the source in this repository. The store release may not in
 
 ## Features
 
-- A resizable sidebar with a draggable floating button, in light and dark themes that follow your system by default.
+- A resizable sidebar with a draggable floating button, with a light theme by default and optional dark or follow-the-system themes.
 - Assignment countdowns, submission status and custom assignments.
 - Course lists, membership statistics, membership changes and grades.
 - Course announcements and system messages, with filters, read status and full previews.
@@ -41,7 +41,7 @@ The initial interface language follows your browser: Chinese uses Traditional Ch
 
 Your language choice is stored locally. Course names, assignment names and original announcement/message content keep their source text. New AI summaries and daily digests use the selected interface language. Previously saved notifications and release notes may retain the language in which they were created.
 
-Appearance follows your system's light or dark mode by default. To fix it, open **More (⋯) → Settings → Appearance → Theme**, choose **Light** or **Dark**, and click **Save settings**; the change applies immediately, including on the notification settings page. Announcement and message previews stay on a light background in the dark theme so their original colors remain readable.
+Appearance is light by default. To change it, open **More (⋯) → Settings → Appearance → Theme**, choose **Dark** or **Follow system**, and click **Save settings**; the change applies immediately, including on the notification settings page. Announcement and message previews stay on a light background in the dark theme so their original colors remain readable.
 
 ## Daily use
 
