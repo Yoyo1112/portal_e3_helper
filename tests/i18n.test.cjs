@@ -61,5 +61,8 @@ test('manifest loads localization first and has valid store locales', () => {
   for (const locale of ['en', 'zh_TW']) {
     const messages = JSON.parse(fs.readFileSync(require('node:path').join(root, '_locales', locale, 'messages.json')));
     assert.ok(messages.extensionDescription.message);
+    assert.ok(messages.extensionDescription.message.length <= 112, `${locale} Safari store description exceeds 112 characters`);
+    assert.equal(typeof messages.extensionDescription.description, 'string');
+    assert.ok(messages.extensionDescription.description.length <= 112);
   }
 });

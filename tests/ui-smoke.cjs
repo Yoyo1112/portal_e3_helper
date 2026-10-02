@@ -6,7 +6,7 @@ const path = require('node:path');
 (async () => {
   const browser = await chromium.launch({ headless: true, ...(process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH } : {}) });
   try {
-    const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+    const page = await browser.newPage({ viewport: { width: 1280, height: 900 }, hasTouch: true });
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));
     await page.route('http://e3-test.local/**', route => route.fulfill({ contentType: 'text/html', body: '<!doctype html><html><head></head><body></body></html>' }));
@@ -85,8 +85,37 @@ const path = require('node:path');
     await checkTabLayout();
     assert.equal(await page.locator('[data-tab="assignments"]').innerText(), '作業');
     assert.ok((await page.locator('[data-content="assignments"]').innerText()).includes('標記為已繳交'));
+    await page.setViewportSize({ width: 768, height: 1024 });
+    await page.locator('#e3-helper-close-btn').tap();
+    await page.locator('.e3-helper-sidebar-toggle').tap();
+    assert.equal(await page.locator('.e3-helper-sidebar').evaluate(el => el.classList.contains('expanded')), true);
+    await page.waitForFunction(() => getComputedStyle(document.querySelector('.e3-helper-sidebar')).transform === 'matrix(1, 0, 0, 1, 0, 0)');
+    const session = await page.context().newCDPSession(page);
+    const dragTouch = async (start, end, cancel = false) => {
+      await session.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: start.x, y: start.y }] });
+      await session.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: end.x, y: end.y }] });
+      await session.send('Input.dispatchTouchEvent', { type: cancel ? 'touchCancel' : 'touchEnd', touchPoints: [] });
+    };
+    const handle = await page.locator('.e3-helper-resize-handle').boundingBox();
+    const oldWidth = await page.locator('.e3-helper-sidebar').evaluate(el => el.offsetWidth);
+    await dragTouch({ x: handle.x + 3, y: 300 }, { x: handle.x + 103, y: 300 });
+    assert.ok(Math.abs(await page.locator('.e3-helper-sidebar').evaluate(el => el.offsetWidth) - (oldWidth - 100)) <= 1, 'Touch resizing follows the drag within pixel rounding');
+    await page.locator('#e3-helper-close-btn').tap();
+    await page.waitForFunction(() => !document.querySelector('.e3-helper-sidebar').getAnimations().length);
+    const toggle = await page.locator('.e3-helper-sidebar-toggle').boundingBox();
+    await dragTouch({ x: toggle.x + 10, y: toggle.y + 10 }, { x: toggle.x + 10, y: toggle.y + 110 });
+    assert.equal(await page.locator('.e3-helper-sidebar').evaluate(el => el.classList.contains('expanded')), false, 'Dragging must not open the sidebar');
+    assert.ok(await page.evaluate(() => localStorage.getItem('e3-helper-toggle-top')), 'Touch drag saves the entrance position');
+    const movedToggle = await page.locator('.e3-helper-sidebar-toggle').boundingBox();
+    await dragTouch({ x: movedToggle.x + 10, y: movedToggle.y + 10 }, { x: movedToggle.x + 10, y: movedToggle.y + 30 }, true);
+    await page.locator('.e3-helper-sidebar-toggle').tap();
+    assert.equal(await page.locator('.e3-helper-sidebar').evaluate(el => el.classList.contains('expanded')), true, 'Cancelled gestures must not break the next tap');
+    await page.waitForFunction(() => getComputedStyle(document.querySelector('.e3-helper-sidebar')).transform === 'matrix(1, 0, 0, 1, 0, 0)');
+    await page.setViewportSize({ width: 320, height: 900 });
+    const sidebarBounds = await page.locator('.e3-helper-sidebar').boundingBox();
+    assert.ok(sidebarBounds.width <= 320 && sidebarBounds.x >= 0, 'Sidebar fits a narrow split view');
     assert.deepEqual(errors, []);
-    console.log('Passed: six English tabs, settings, unchanged source names, saved preference and Chinese after refresh.');
+    console.log('Passed: six tabs, language/settings, touch tap/resize/drag/cancel and narrow split view.');
   } finally {
     await browser.close();
   }

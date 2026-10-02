@@ -1,6 +1,6 @@
 // Browser notifications on Chrome; native macOS notifications in the Safari package.
 (function () {
-  const native = !chrome.notifications?.create && chrome.runtime.getURL('').startsWith('safari-web-extension:') && Boolean(chrome.runtime.sendNativeMessage);
+  const native = !chrome.notifications?.create && chrome.runtime.getURL('').startsWith('safari-web-extension:') && Boolean(chrome.runtime.sendNativeMessage) && Boolean(chrome.runtime.getManifest?.().permissions?.includes('nativeMessaging'));
   async function request(action, payload = {}) {
     const response = await chrome.runtime.sendNativeMessage('com.yoyo1112.nycu-e3-helper', { action, ...payload });
     if (!response?.success) throw new Error(response?.error || 'Native notification service unavailable');

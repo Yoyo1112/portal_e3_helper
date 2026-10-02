@@ -359,6 +359,7 @@ const style = document.createElement('style');
 style.textContent = `
   /* 側欄樣式 */
   .e3-helper-sidebar {
+    box-sizing: border-box;
     position: fixed;
     top: 0;
     right: 0;
@@ -1510,7 +1511,12 @@ style.textContent += `
   /* Host pages often color bare text elements; keep ours on the theme without outranking our own classes. */
   :where(.e3-helper-sidebar, .e3-helper-log-modal, #e3-helper-add-assignment-modal, #e3-helper-changelog-modal) :is(p, li, h1, h2, h3, h4, h5, td, th, label, small, strong, em, b):not(html) { color: inherit; }
   .e3-helper-icon { display: inline-block; flex: none; vertical-align: middle; }
-  .e3-helper-sidebar { background: var(--e3-bg); border-left: 1px solid var(--e3-border); box-shadow: -8px 0 32px rgb(var(--e3-shadow) / 8%); height: 100dvh; max-width: min(800px, 100vw); }
+  .e3-helper-sidebar { background: var(--e3-bg); border-left: 1px solid var(--e3-border); box-shadow: -8px 0 32px rgb(var(--e3-shadow) / 8%); height: 100dvh; min-width: min(280px, 100vw); max-width: min(800px, 100vw); padding-bottom: env(safe-area-inset-bottom, 0px); }
+  .e3-helper-resize-handle, .e3-helper-sidebar-toggle { touch-action: none; }
+  @media (pointer: coarse) {
+    .e3-helper-resize-handle { width: 16px; }
+    .e3-helper-sidebar :is(button, select, input:not([type=checkbox])) { min-height: 44px; }
+  }
   .e3-helper-resize-handle:hover, .e3-helper-resize-handle:active { background: var(--e3-border-strong); }
 
   /* Header */
@@ -2908,7 +2914,9 @@ function createSidebar() {
     let startX = 0;
     let startWidth = 0;
 
-    resizeHandle.addEventListener('mousedown', (e) => {
+    resizeHandle.addEventListener('pointerdown', (e) => {
+      if (!e.isPrimary || e.button !== 0) return;
+      resizeHandle.setPointerCapture(e.pointerId);
       isResizing = true;
       startX = e.clientX;
       startWidth = sidebar.offsetWidth;
@@ -2920,19 +2928,17 @@ function createSidebar() {
       e.preventDefault();
     });
 
-    document.addEventListener('mousemove', (e) => {
-      if (!isResizing) return;
+    resizeHandle.addEventListener('pointermove', (e) => {
+      if (!isResizing || !e.isPrimary) return;
 
       const deltaX = startX - e.clientX; // 向左拖是正值
       const newWidth = startWidth + deltaX;
 
       // 限制寬度範圍
-      if (newWidth >= 280 && newWidth <= 800) {
-        sidebar.style.width = newWidth + 'px';
-      }
+      sidebar.style.width = Math.max(Math.min(280, window.innerWidth), Math.min(newWidth, 800, window.innerWidth)) + 'px';
     });
 
-    document.addEventListener('mouseup', async () => {
+    async function finishResize() {
       if (!isResizing) return;
 
       isResizing = false;
@@ -2943,7 +2949,10 @@ function createSidebar() {
       const width = sidebar.offsetWidth;
       await chrome.storage.local.set({ sidebarWidth: width });
       console.log('E3 Helper: 側邊欄寬度已儲存:', width);
-    });
+    }
+    resizeHandle.addEventListener('pointerup', finishResize);
+    resizeHandle.addEventListener('pointercancel', finishResize);
+    resizeHandle.addEventListener('lostpointercapture', finishResize);
 
     // 載入儲存的寬度設定
     chrome.storage.local.get(['sidebarWidth'], (result) => {
@@ -3221,7 +3230,9 @@ function createSidebar() {
     let hasMoved = false;
 
     // 滑鼠按下
-    toggleBtn.addEventListener('mousedown', (e) => {
+    toggleBtn.addEventListener('pointerdown', (e) => {
+      if (!e.isPrimary || e.button !== 0) return;
+      toggleBtn.setPointerCapture(e.pointerId);
       if (e.target === toggleBtn || toggleBtn.contains(e.target)) {
         initialY = e.clientY - yOffset;
         isDragging = true;
@@ -3234,8 +3245,8 @@ function createSidebar() {
     });
 
     // 滑鼠移動
-    document.addEventListener('mousemove', (e) => {
-      if (!isDragging) return;
+    toggleBtn.addEventListener('pointermove', (e) => {
+      if (!isDragging || !e.isPrimary) return;
 
       e.preventDefault();
       currentY = e.clientY - initialY;
@@ -3253,8 +3264,8 @@ function createSidebar() {
     });
 
     // 滑鼠放開
-    document.addEventListener('mouseup', (e) => {
-      if (!isDragging) return;
+    toggleBtn.addEventListener('pointerup', (e) => {
+      if (!isDragging || !e.isPrimary) return;
 
       // 恢復 transition
       toggleBtn.style.transition = '';
@@ -3272,6 +3283,14 @@ function createSidebar() {
       isDragging = false;
       hasMoved = false;
     });
+
+    function cancelDrag() {
+      toggleBtn.style.transition = '';
+      isDragging = false;
+      hasMoved = false;
+    }
+    toggleBtn.addEventListener('pointercancel', cancelDrag);
+    toggleBtn.addEventListener('lostpointercapture', cancelDrag);
 
     // 設定位置的輔助函數
     function setPosition(el, offset) {

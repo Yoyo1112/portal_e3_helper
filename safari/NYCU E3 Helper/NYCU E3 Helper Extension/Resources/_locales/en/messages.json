@@ -1,5 +1,6 @@
 {
   "extensionDescription": {
-    "message": "Improve NYCU E3 with assignment countdowns, grades, downloads, translation, AI summaries, notifications and a bilingual interface."
+    "message": "NYCU E3 assignments, courses, announcements, downloads, translation, AI summaries and notifications.",
+    "description": "Description of the E3 Helper Safari and Chrome extension."
   }
 }
