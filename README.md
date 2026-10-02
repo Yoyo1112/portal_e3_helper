@@ -34,6 +34,16 @@ macOS Safari 的 Xcode 專案、簽署與測試方式請見 [Safari 安裝與開
 
 iPad 版專案已加入，最低 iPadOS 26，安裝與 TestFlight 打包請見 [iPad 指南](safari/ios/README.md)。`2.2.0 (1)` 已上傳 App Store Connect，待 Apple 處理與 TestFlight 測試群組指派；側欄通知保留，沒有 iPad 系統推播。
 
+### 下載打包檔
+
+適用於 Chrome、Edge 或 Brave，不需要下載整個儲存庫：
+
+1. 到 [Releases](https://github.com/Yoyo1112/portal_e3_helper/releases/latest) 下載 `nycu-e3-helper-<版本>.zip` 並解壓縮。壓縮檔只包含瀏覽器擴充功能本體，不含 Safari 專案、測試與文件。
+2. 開啟瀏覽器的擴充功能管理頁：Chrome 使用 `chrome://extensions/`，Edge 使用 `edge://extensions/`，Brave 使用 `brave://extensions/`。
+3. 開啟「開發人員模式」，點「載入未封裝項目」，選擇解壓縮後的資料夾。
+
+更新時下載新版壓縮檔，解壓縮到同一個資料夾後，在擴充功能管理頁重新載入。
+
 ### 載入原始碼
 
 適用於 Chrome、Edge 或 Brave：
@@ -253,6 +263,12 @@ python3 scripts/package-extension.py
 ```
 
 在 `dist/` 產生 `nycu-e3-helper-<版本>.zip`，只包含擴充功能本體（`manifest.json`、各個 JS、通知設定頁、`_locales/` 與圖示），不含文件、測試、腳本與 Safari 專案。若 `manifest.json`、背景程式或通知設定頁引用了未列入的檔案，腳本會中止並列出檔名。打包的檔案清單與 `scripts/sync-safari.py` 共用，新增共用檔案時只需更新該處。
+
+發佈新版時，先更新 `manifest.json` 的版本號與 `CHANGELOG.md`，合併進 `main` 後打包，再把壓縮檔附到 GitHub Release，讓使用者可以直接下載：
+
+```bash
+gh release create v<版本> dist/nycu-e3-helper-<版本>.zip --target main --title "v<版本>"
+```
 
 ## 更新與貢獻
 
