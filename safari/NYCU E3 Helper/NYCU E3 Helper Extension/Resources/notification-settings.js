@@ -1,8 +1,8 @@
 (async function () {
   await E3HelperI18n.ready;
-  // Same appearance setting as the sidebar: system by default, or a fixed theme.
+  // Same appearance setting as the sidebar: light unless dark or follow-the-system is saved.
   const { themePreference } = await chrome.storage.local.get(['themePreference']);
-  if (themePreference === 'light' || themePreference === 'dark') document.documentElement.dataset.theme = themePreference;
+  if (themePreference === 'system' || themePreference === 'dark') document.documentElement.dataset.theme = themePreference;
   const t = E3HelperI18n.text;
   const english = E3HelperI18n.language === 'en';
   const supported = E3DesktopNotifications.supported;

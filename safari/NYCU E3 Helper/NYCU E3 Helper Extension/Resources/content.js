@@ -1474,7 +1474,7 @@ const E3_DARK_TOKENS = `
     color-scheme: dark;
 `;
 style.textContent += `
-  /* Shared theme. Follows the system light/dark preference unless a theme is chosen in settings. */
+  /* Shared theme. Light by default; settings can switch to dark or follow the system. */
   ${E3_THEME_ROOTS} {
     ${E3_LIGHT_TOKENS}
     --e3-launcher-bg: #b3261e;
@@ -1501,7 +1501,7 @@ style.textContent += `
     text-align: left;
   }
   @media (prefers-color-scheme: dark) {
-    :root:not([data-e3-helper-theme="light"]) ${E3_THEME_ROOTS} { ${E3_DARK_TOKENS} }
+    :root[data-e3-helper-theme="system"] ${E3_THEME_ROOTS} { ${E3_DARK_TOKENS} }
   }
   :root[data-e3-helper-theme="dark"] ${E3_THEME_ROOTS} { ${E3_DARK_TOKENS} }
   /* Announcement and mail bodies are authored on E3 with their own colors: keep them on paper. */
@@ -1794,9 +1794,9 @@ style.textContent += `
 `;
 document.head.appendChild(style);
 
-// Appearance: follow the system unless a fixed theme is saved in settings.
+// Appearance: light unless settings saved dark or follow-the-system.
 function applyThemePreference(value) {
-  if (value === 'light' || value === 'dark') document.documentElement.dataset.e3HelperTheme = value;
+  if (value === 'system' || value === 'dark') document.documentElement.dataset.e3HelperTheme = value;
   else delete document.documentElement.dataset.e3HelperTheme;
 }
 try {
@@ -2418,7 +2418,7 @@ function createSidebar() {
             <li>切換「作業、課程、下載、公告、通知、說明」查看對應資訊。</li>
           </ol>
           <p>浮動入口可上下拖曳，側欄左緣可拖曳調整寬度。「更多」選單提供設定、查看日誌與問題回報。</p>
-          <p>外觀預設跟隨系統的深淺色；到「更多 → 設定 → 外觀」可固定為淺色或深色。</p>
+          <p>外觀預設為淺色；到「更多 → 設定 → 外觀」可改為深色或跟隨系統。</p>
         </section>
         <section>
           <h3>今日總覽</h3>
@@ -3545,9 +3545,9 @@ function createSettingsModal() {
             <h3 class="e3-helper-settings-title">外觀</h3>
             <label class="e3-helper-setting-label-block" for="e3-helper-theme">主題</label>
             <select id="e3-helper-theme" class="e3-helper-setting-input">
-              <option value="system">跟隨系統</option>
               <option value="light">淺色</option>
               <option value="dark">深色</option>
+              <option value="system">跟隨系統</option>
             </select>
           </div>
           <div class="e3-helper-settings-section">
@@ -3794,7 +3794,7 @@ function createSettingsModal() {
 async function loadAISettings() {
   document.getElementById('e3-helper-language').value = E3HelperI18n.language;
   const storage = await chrome.storage.local.get(['aiSettings', 'themePreference']);
-  document.getElementById('e3-helper-theme').value = ['light', 'dark'].includes(storage.themePreference) ? storage.themePreference : 'system';
+  document.getElementById('e3-helper-theme').value = ['system', 'dark'].includes(storage.themePreference) ? storage.themePreference : 'light';
   const aiSettings = storage.aiSettings || {
     enabled: false,
     openaiSummaryApiKey: '',
