@@ -3551,6 +3551,10 @@ function createSettingsModal() {
             </select>
           </div>
           <div class="e3-helper-settings-section">
+            <h3 class="e3-helper-settings-title">${uiText('通知設定')}</h3>
+            <button id="e3-helper-notification-settings" class="e3-helper-log-btn">${uiText('設定通知與提醒時間')}</button>
+          </div>
+          <div class="e3-helper-settings-section">
             <h3 class="e3-helper-settings-title"> OpenAI AI 摘要</h3>
             <div class="e3-helper-settings-description">
               使用 OpenAI 生成公告與信件摘要；翻譯則使用 Google Translate 免費服務。
@@ -3746,6 +3750,15 @@ function createSettingsModal() {
   // 關閉按鈕
   document.getElementById('e3-helper-close-settings').addEventListener('click', () => {
     settingsModal.classList.remove('show');
+  });
+
+  document.getElementById('e3-helper-notification-settings').addEventListener('click', async () => {
+    // A page left open across an extension reload can no longer reach the background script.
+    try {
+      await chrome.runtime.sendMessage({ action: 'openNotificationSettings' });
+    } catch (error) {
+      showTemporaryMessage(formatExtensionError(error), 'error', 6000);
+    }
   });
 
   // 儲存設定按鈕
