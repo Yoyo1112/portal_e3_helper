@@ -20,7 +20,8 @@ def extension_files():
     spec = importlib.util.spec_from_file_location('sync_safari', ROOT / 'scripts/sync-safari.py')
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
-    return ['manifest.json', *module.FILES]
+    # CHANGELOG.md is fetched at runtime for the What's New dialog.
+    return ['manifest.json', 'CHANGELOG.md', *module.FILES]
 
 def expand(names):
     paths = []
@@ -46,6 +47,8 @@ def referenced(manifest):
         refs.update(re.findall(r'''['"]([^'"]+)['"]''', call))
     page = (ROOT / manifest['options_ui']['page']).read_text(encoding='utf-8')
     refs.update(ref for ref in re.findall(r'''(?:src|href)=["']([^"']+)["']''', page) if '://' not in ref)
+    for script in ROOT.glob('*.js'):
+        refs.update(re.findall(r'''runtime\.getURL\(['"]([^'"]+)['"]\)''', script.read_text(encoding='utf-8')))
     return refs
 
 def main():
