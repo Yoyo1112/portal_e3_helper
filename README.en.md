@@ -22,9 +22,9 @@ This guide describes the source in this repository. The store release may not in
 
 ## Installation
 
-Install from the [Chrome Web Store](https://chromewebstore.google.com/detail/nycu-e3-helper/cmagonljljocpkfojkabhiedjafamoef), or load the source in Chrome, Edge or Brave:
+Install from the [Chrome Web Store](https://chromewebstore.google.com/detail/nycu-e3-helper/cmagonljljocpkfojkabhiedjafamoef), or load it yourself in Chrome, Edge or Brave:
 
-1. Clone this repository or download its source.
+1. Download `nycu-e3-helper-<version>.zip` from the [latest release](https://github.com/Yoyo1112/portal_e3_helper/releases/latest) and unzip it. The zip contains only the browser extension, without the Safari projects, tests or docs. Alternatively, clone this repository.
 2. Open `chrome://extensions/`, `edge://extensions/` or `brave://extensions/`.
 3. Enable **Developer mode**, select **Load unpacked**, and choose the folder containing `manifest.json`.
 4. Open a webpage and click the floating **E3 Helper** button.
@@ -114,6 +114,12 @@ python3 scripts/package-extension.py
 ```
 
 This writes `dist/nycu-e3-helper-<version>.zip` containing only the extension itself (`manifest.json`, the scripts, the notification settings page, `_locales/` and the icon), without docs, tests, scripts or the Safari projects. It stops and names the file if the manifest, the service worker or the settings page references something that is not packaged. The file list is shared with `scripts/sync-safari.py`.
+
+To publish a version, update the version in `manifest.json` and `CHANGELOG.md`, merge to `main`, build the package, then attach it to a GitHub release so users can download it directly:
+
+```bash
+gh release create v<version> dist/nycu-e3-helper-<version>.zip --target main --title "v<version>"
+```
 
 Optional browser smoke test (requires Playwright and a browser):
 
