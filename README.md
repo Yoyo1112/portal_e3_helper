@@ -246,6 +246,14 @@ git diff --check
 
 請驗證六個分頁、280／350／800px 側欄寬度、作業管理、閱讀狀態、同步、下載、翻譯與 AI 摘要。確認空資料、載入中、失敗與成功狀態，以及鍵盤焦點和宿主頁面樣式。
 
+### 打包上架
+
+```bash
+python3 scripts/package-extension.py
+```
+
+在 `dist/` 產生 `nycu-e3-helper-<版本>.zip`，只包含擴充功能本體（`manifest.json`、各個 JS、通知設定頁、`_locales/` 與圖示），不含文件、測試、腳本與 Safari 專案。若 `manifest.json`、背景程式或通知設定頁引用了未列入的檔案，腳本會中止並列出檔名。打包的檔案清單與 `scripts/sync-safari.py` 共用，新增共用檔案時只需更新該處。
+
 ## 更新與貢獻
 
 目前原始碼已加入極簡介面與深淺色主題、今日總覽、OpenAI 摘要設定與更新後的側欄操作說明。版本歷史請參閱 [CHANGELOG.md](CHANGELOG.md)。

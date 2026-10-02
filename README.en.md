@@ -107,6 +107,14 @@ node --check content.js
 node --check background.js
 ```
 
+Build the Chrome Web Store package with:
+
+```bash
+python3 scripts/package-extension.py
+```
+
+This writes `dist/nycu-e3-helper-<version>.zip` containing only the extension itself (`manifest.json`, the scripts, the notification settings page, `_locales/` and the icon), without docs, tests, scripts or the Safari projects. It stops and names the file if the manifest, the service worker or the settings page references something that is not packaged. The file list is shared with `scripts/sync-safari.py`.
+
 Optional browser smoke test (requires Playwright and a browser):
 
 ```bash
