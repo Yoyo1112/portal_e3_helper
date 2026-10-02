@@ -8,7 +8,7 @@
 - App Bundle ID：`com.yoyo1112.nycu-e3-helper`
 - Extension Bundle ID：`com.yoyo1112.nycu-e3-helper.Extension`
 - Team：`5XHJTS2WUD`（沿用 Mac 版設定）
-- 版本：2.2.0；Build：1
+- 版本：3.0.0；Build：1
 
 App 提供啟用說明、E3 入口與隱私說明；側欄沿用共用 JavaScript，新增手指拖曳入口與調整寬度、取消手勢處理、觸控按鈕高度與窄視窗限制。iPad manifest 沒有 `nativeMessaging`、`notifications` 或 `downloads` 權限；系統通知關閉，側欄通知保留。Safari 的分頁登入 session 轉送沿用 Mac 版實作。
 
