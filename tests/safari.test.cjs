@@ -50,3 +50,14 @@ test('Safari package omits unsupported permissions and matches shared sources', 
     assert.equal(fs.readFileSync(path.join(resources, name), 'utf8'), fs.readFileSync(path.join(root, name), 'utf8'));
   }
 });
+test('iPad package keeps common sources but does not advertise native desktop notifications', () => {
+  const resources = path.join(root, 'safari/ios/NYCU E3 Helper iOS/NYCU E3 Helper iOS Extension/Resources');
+  const manifest = JSON.parse(fs.readFileSync(path.join(resources, 'manifest.json')));
+  for (const permission of ['downloads', 'notifications', 'nativeMessaging']) {
+    assert.ok(!manifest.permissions.includes(permission));
+  }
+  assert.equal(manifest.version, JSON.parse(fs.readFileSync(path.join(root, 'manifest.json'))).version);
+  for (const name of ['content.js', 'background.js', 'desktop-notifications.js', 'notification-engine.js', 'notification-settings.js']) {
+    assert.equal(fs.readFileSync(path.join(resources, name), 'utf8'), fs.readFileSync(path.join(root, name), 'utf8'));
+  }
+});

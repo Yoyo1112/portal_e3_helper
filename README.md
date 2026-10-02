@@ -30,6 +30,10 @@
 
 macOS Safari 的 Xcode 專案、簽署與測試方式請見 [Safari 安裝與開發指南](safari/README.md)，上架準備請見 [App Store 指南](safari/APP_STORE.md)。Safari 版透過原生橋接使用 macOS 桌面通知，需允許 NYCU E3 Helper 的系統通知；側欄通知仍可使用。
 
+### iPad Safari（TestFlight 開發版）
+
+iPad 版專案已加入，最低 iPadOS 26，安裝與 TestFlight 打包請見 [iPad 指南](safari/ios/README.md)。`2.2.0 (1)` 已上傳 App Store Connect，待 Apple 處理與 TestFlight 測試群組指派；側欄通知保留，沒有 iPad 系統推播。
+
 ### 載入原始碼
 
 適用於 Chrome、Edge 或 Brave：

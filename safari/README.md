@@ -1,5 +1,7 @@
 # macOS Safari 版
 
+iPad Safari 與 TestFlight 專案請見 [iPad 指南](ios/README.md)。
+
 已建立 macOS App + Safari Web Extension 的 Xcode 專案，最低支援 macOS 14。Web Extension 版本與原始 manifest 同步，目前為 2.2.0。
 
 ## 開啟與簽署
