@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "NYCU E3 Helper",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "__MSG_extensionDescription__",
   "permissions": [
     "storage",
@@ -14,7 +14,8 @@
     "https://e3p.nycu.edu.tw/*",
     "http://localhost:11434/*",
     "https://api.openai.com/*",
-    "https://translate.googleapis.com/*"
+    "https://translate.googleapis.com/*",
+    "https://generativelanguage.googleapis.com/*"
   ],
   "content_scripts": [
     {

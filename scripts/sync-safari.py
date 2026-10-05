@@ -27,7 +27,7 @@ def sync_project(project, extension, native_notifications):
     if native_notifications:
         manifest['permissions'].append('nativeMessaging')
     manifest['options_ui'].pop('open_in_tab', None)
-    # The active AI implementation uses OpenAI; no local Ollama service is needed.
+    # Gemini/OpenAI summaries do not need a local Ollama service.
     manifest['host_permissions'] = [p for p in manifest['host_permissions'] if 'localhost' not in p]
     (resources / 'manifest.json').write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + '\n')
     pbx = next(project.glob('*.xcodeproj')) / 'project.pbxproj'

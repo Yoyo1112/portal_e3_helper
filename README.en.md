@@ -15,7 +15,7 @@ This guide describes the source in this repository. The store release may not in
 - Course lists, membership statistics, membership changes and grades.
 - Course announcements and system messages, with filters, read status and full previews.
 - A daily AI digest of today's announcements and messages, with source links.
-- Chinese–English translation with Google Translate and AI summaries with OpenAI.
+- Chinese–English translation with Google Translate and AI summaries with Gemini or OpenAI.
 - Material scanning and individual or ZIP downloads.
 - Notifications, unread badges and background synchronization.
 - Traditional Chinese and English interface languages.
@@ -55,11 +55,11 @@ Deadlines use your local time zone. Countdowns are red within one day, amber wit
 
 Open **Announcements** to load data, or click **Reload**. Filter by type and read status. A red dot indicates an unread item. **View content** opens a preview with read-status controls and **Open full page**.
 
-Use **Chinese → English**, **English → Chinese**, **AI summary** or **Show original** in the preview. Translation uses Google Translate and requires no OpenAI API key.
+Use **Chinese → English**, **English → Chinese**, **AI summary** or **Show original** in the preview. Translation uses Google Translate and requires no AI API key.
 
 ### Today's digest
 
-Load announcements and messages, then click **Generate digest** at the top of the Announcements tab. Enable AI summaries and save your OpenAI API key in Settings first.
+Load announcements and messages, then click **Generate digest** at the top of the Announcements tab. Enable AI summaries and select Gemini or OpenAI and save its API key and model in Settings first.
 
 The digest uses today's local date and up to 40 recent items, regardless of filters. It summarizes titles, courses, senders and timestamps, rather than reading each item's full body. Open the source links for full instructions and deadlines. Retry if generation fails.
 
@@ -79,15 +79,17 @@ The helper can display saved data and load E3 data in the background from ordina
 
 ## AI settings and privacy
 
-Open **More → Settings**, enable AI summaries, enter your OpenAI API key, choose a model and click **Save settings**. **Test OpenAI summaries** checks the connection. Account access, pricing and quotas depend on your own OpenAI account.
+Open **More → Settings**, enable AI summaries, choose Gemini or OpenAI, enter its API key, choose a model and click **Save settings**. **Test connection** checks the connection. Account access, pricing and quotas depend on your provider account.
 
-Course data, read status, settings and API keys are stored locally in your browser. Translation sends content to Google Translate. Individual summaries send the item body to OpenAI; daily digests send today's titles, courses, senders and timestamps. OpenAI summary requests use the Responses API with `store: false`. The extension uses your existing E3 login and does not ask for your E3 password.
+Course data, read status, settings and API keys are stored locally in your browser. Translation sends content to Google Translate. Individual summaries send the item body to the selected Gemini or OpenAI provider; daily digests send today's titles, courses, senders and timestamps to that provider. OpenAI summary requests use the Responses API with `store: false`. The extension uses your existing E3 login and does not ask for your E3 password.
+
+Gemini models are discovered at runtime, filtered for content-generation support and cached locally. If discovery fails, use the last-known list or enter a model ID manually. Switching providers retains both sets of saved keys and models.
 
 ## Troubleshooting
 
 - **Sync or loading fails:** sign in to E3 again, check your connection and retry.
 - **AI summary fails:** check that summaries are enabled and your API key is saved; test the connection in Settings.
-- **Translation fails:** check your connection and retry. Translation does not require an OpenAI key.
+- **Translation fails:** check your connection and retry. Translation does not require an AI key.
 - **The interface is outdated after an update:** reload the extension, then refresh open webpages.
 - **ZIP download fails:** retry with fewer files or use individual downloads.
 - **Need to report a problem:** use **More → View logs** or **More → Report an issue**. Review logs for personal information before sharing.
@@ -112,6 +114,8 @@ Build the Chrome Web Store package with:
 ```bash
 python3 scripts/package-extension.py
 ```
+
+Every push to `main` now validates and rebuilds the ZIP in GitHub Actions. Pushing a `v*` version tag attaches the package to its GitHub release.
 
 This writes `dist/nycu-e3-helper-<version>.zip` containing only the extension itself (`manifest.json`, the scripts, the notification settings page, `_locales/` and the icon), without docs, tests, scripts or the Safari projects. It stops and names the file if the manifest, the service worker or the settings page references something that is not packaged. The file list is shared with `scripts/sync-safari.py`.
 

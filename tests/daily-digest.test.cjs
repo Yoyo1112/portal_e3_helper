@@ -31,7 +31,8 @@ function load(storage) {
     generateDailyDigest: async () => { calls++; return '{"highlights":[{"source":1,"summary":"保留下來的重點"}],"priority":[]}'; },
     showTemporaryMessage() {}
   });
-  vm.runInContext(digestCode + rendering, context);
+  const config = source.slice(source.indexOf('function getAISummaryConfig('), source.indexOf('function updateAIProviderFields('));
+  vm.runInContext(config + digestCode + rendering, context);
   return { context, display: () => context.displayAnnouncements(), generate: () => elements['e3-helper-generate-daily-digest'].click(), container: () => elements['e3-helper-daily-digest'], calls: () => calls };
 }
 test('generated digest survives helper reopening and a fresh content-script session without another AI call', async () => {
