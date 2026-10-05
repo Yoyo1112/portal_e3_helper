@@ -5,6 +5,11 @@
 格式基於 [Keep a Changelog](https://keepachangelog.com/zh-TW/1.0.0/)，
 版本號遵循 [語義化版本 2.0.0](https://semver.org/lang/zh-TW/)。
 
+## [Unreleased]
+
+### 🐛 修正 (Fixed)
+- 公告與信件的定時同步僅使用已開啟的 E3 分頁；沒有分頁時跳過，避免自動開啟 E3 登入頁再關閉。手動載入仍可建立暫時背景分頁。
+
 ## [3.0.0] - 2026-10-02
 
 ### ✨ 新增 (Added)
