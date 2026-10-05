@@ -156,7 +156,7 @@ iPad 版專案已加入，最低 iPadOS 26，安裝與 TestFlight 打包請見 [
 
 「中→英」與「英→中」使用 Google Translate；英文翻成中文時使用繁體中文。翻譯不需要 AI API Key，也不依賴 AI 摘要開關。翻譯流程會保留原有 HTML 結構；如需確認完整內容，可切回原文或開啟來源頁面。
 
-摘要與今日總覽可使用 Gemini 或 OpenAI。Gemini 模型會從 API 動態載入；清單載入失敗時可使用上次清單或手動輸入模型 ID。切換供應商會保留兩組金鑰及模型設定。翻譯固定使用 Google Translate，不需要 AI 金鑰。
+摘要與今日總覽可使用 Gemini 或 OpenAI。Gemini 模型會從 API 動態載入；清單載入失敗時可使用上次清單或手動輸入模型 ID。切換供應商會保留兩組金鑰及模型設定。翻譯固定使用 Google Translate，不需要 AI 金鑰。更多供應商、模型探索與驗證說明見 [AI 摘要與今日總覽](docs/features/ai-summaries.md)。
 
 ## 同步行為
 
