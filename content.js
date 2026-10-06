@@ -3867,7 +3867,7 @@ function showTemporaryMessage(message, type = 'success', duration = 3000) {
 
   const messageEl = document.createElement('div');
   messageEl.className = 'e3-helper-toast';
-  messageEl.dataset.type = Object.hasOwn(colors, type) ? type : 'success';
+  messageEl.dataset.type = Object.prototype.hasOwnProperty.call(colors, type) ? type : 'success';
   messageEl.setAttribute('role', type === 'error' ? 'alert' : 'status');
   messageEl.style.cssText = `
     position: fixed;
