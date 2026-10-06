@@ -72,10 +72,19 @@ test('both workers return text and Gemini combines non-thought text parts', asyn
   assert.equal(JSON.parse(requests[0].options.body).store, false);
   assert.equal((await send({ action: 'callGeminiApi', apiKey: 'fixture', model: 'models/future-flash', content: 'source', maxOutputTokens: 4096 })).data, 'Gemini summary');
   assert.match(requests[1].url, /models\/future-flash:generateContent$/);
-  assert.equal(JSON.parse(requests[1].options.body).generationConfig.maxOutputTokens, 4096);
+  assert.equal(Object.hasOwn(JSON.parse(requests[1].options.body), 'generationConfig'), false);
+});
+test('Gemini preserves explicitly supplied generation options', async () => {
+  let body;
+  const send = worker(async (url, options) => {
+    body = JSON.parse(options.body);
+    return jsonResponse({ candidates: [{ content: { parts: [{ text: 'summary' }] } }] });
+  });
+  await send({ action: 'callGeminiApi', apiKey: 'fixture', model: 'future-model', content: 'source', generationConfig: { temperature: 0.2 } });
+  assert.deepEqual(body.generationConfig, { temperature: 0.2 });
 });
 function summaryContext(sendMessage) {
-  const context = vm.createContext({ console, Date, uiText: text => text, E3HelperI18n: { language: 'zh-TW' }, chrome: { runtime: { sendMessage } } });
+  const context = vm.createContext({ console, Date, uiText: text => text, E3HelperI18n: {language:'zh-TW'}, chrome: { runtime: { sendMessage } } });
   vm.runInContext(['getAISummaryConfig', 'callSummaryProvider', 'generateAISummary', 'generateDailyDigest']
     .map(name => functionSource(content, name)).join('\n'), context);
   return context;
@@ -104,6 +113,8 @@ for (const provider of ['gemini', 'openai']) {
     assert.equal(records[0].title, injection);
     assert.equal(records[0].course, 'course\nforged');
     assert.ok(requests.every(request => request.action === (provider === 'gemini' ? 'callGeminiApi' : 'callOpenAIResponsesApi')));
+    assert.ok(requests.every(request => provider === 'gemini'
+      ? !Object.hasOwn(request, 'maxOutputTokens') : request.maxOutputTokens > 0));
   });
 }
 test('summary provider surfaces a background failure and a rejected message', async () => {
@@ -112,7 +123,12 @@ test('summary provider surfaces a background failure and a rejected message', as
   app.chrome.runtime.lastError = { message: 'Extension context invalidated' };
   await assert.rejects(app.generateDailyDigest([], { provider: 'openai', apiKey: 'fixture', model: 'fixture-model' }), /Extension context invalidated/);
 });
-
+test('OpenAI rejects partial text from an incomplete response', async () => {
+  const send = worker(async () => jsonResponse({status:'incomplete',incomplete_details:{reason:'max_output_tokens'},output_text:'partial summary'}));
+  const result = await send({action:'callOpenAIResponsesApi',apiKey:'fixture',model:'fixture',content:'source'});
+  assert.equal(result.success,false);
+  assert.match(result.error,/max_output_tokens/);
+});
 
 test('full release keeps English summaries and digests when English is selected', async () => {
   const requests = [];
