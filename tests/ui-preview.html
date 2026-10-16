@@ -13,6 +13,7 @@
 (() => {
   window.fetch = () => Promise.reject(new Error('Network is disabled in the preview'));
   const now = Date.now(), H = 3600000, D = 24 * H;
+  const day = (offset, hour, minute) => { const date = new Date(now + offset * D); date.setHours(hour, minute, 0, 0); return date.getTime(); };
   const lang = new URLSearchParams(location.search).get('lang') || 'zh-TW';
   const courses = [
     { id: 1, fullname: '1151.作業系統概論 Introduction to Operating Systems', summary: 'Processes, scheduling, memory management and file systems.' },
@@ -26,7 +27,18 @@
       { eventId: 'a1', name: 'HW2：Process Scheduling', course: courses[0].fullname, deadline: now + 9.8 * H, url: 'https://e3p.nycu.edu.tw/' },
       { eventId: 'a2', name: 'Homework 3', course: courses[1].fullname, deadline: now + 2.4 * D, url: 'https://e3p.nycu.edu.tw/' },
       { eventId: 'a3', name: 'Lab 2：Linked List', course: courses[2].fullname, deadline: now + 5.9 * D, manualStatus: 'submitted', url: 'https://e3p.nycu.edu.tw/' },
-      { eventId: 'manual-4', name: 'Problem Set 2', course: courses[3].fullname, deadline: now + 11.4 * D, isManual: true }
+      { eventId: 'manual-4', name: 'Problem Set 2', course: courses[3].fullname, deadline: now + 11.4 * D, isManual: true },
+      { eventId: 'exam-1', kind: 'exam', examType: 'midterm', examKey: 'exam:2:midterm', name: '期中考', course: courses[1].fullname, deadline: day(4, 13, 20), endTime: day(4, 16, 20), timeKnown: 'class-slot', location: 'EC015', scope: 'Ch 1-4', url: '#', isManual: true, manualStatus: 'pending' }
+    ],
+    examSuggestions: [
+      { id: 'exam:1:midterm', courseId: '1', course: courses[0].fullname, examType: 'midterm', state: 'new', resolvedFingerprint: '', candidates: [
+        { courseId: '1', course: courses[0].fullname, examType: 'midterm', deadline: day(6, 10, 10), endTime: day(6, 12, 0), timeKnown: 'class-slot', source: 'timetable', url: 'https://e3p.nycu.edu.tw/', label: 'W9', confidence: 'medium', seenAt: 0 },
+        { courseId: '1', course: courses[0].fullname, examType: 'midterm', deadline: day(13, 10, 10), timeKnown: 'exact', source: 'syllabusFile', url: 'https://e3p.nycu.edu.tw/', label: 'Syllabus 2026.pdf', scope: 'Ch 1-6', confidence: 'high', seenAt: now }] },
+      { id: 'exam:3:quiz:x', courseId: '3', course: courses[2].fullname, examType: 'quiz', state: 'new', resolvedFingerprint: '', candidates: [
+        { courseId: '3', course: courses[2].fullname, examType: 'quiz', deadline: day(2, 8, 0), timeKnown: 'date-only', source: 'announcement', url: 'https://e3p.nycu.edu.tw/', label: 'Quiz on Thursday', confidence: 'low', seenAt: now }] },
+      { id: 'exam:2:midterm', courseId: '2', course: courses[1].fullname, examType: 'midterm', state: 'update', resolvedFingerprint: '', candidates: [
+        { courseId: '2', course: courses[1].fullname, examType: 'midterm', deadline: day(4, 13, 20), timeKnown: 'class-slot', source: 'timetable', url: 'https://e3p.nycu.edu.tw/', label: 'W8', confidence: 'medium', seenAt: 0 },
+        { courseId: '2', course: courses[1].fullname, examType: 'midterm', deadline: day(5, 13, 20), timeKnown: 'exact', source: 'message', url: 'https://e3p.nycu.edu.tw/', label: '期中考教室與座位表', location: 'EC022', confidence: 'high', seenAt: now }] }
     ],
     courses, participantCounts: { 1: { count: 87 }, 2: { count: 112 }, 3: { count: 96 }, 4: { count: 74 } },
     announcements: [
@@ -43,13 +55,18 @@
   const pick = keys => keys == null ? { ...data } : Object.fromEntries([].concat(keys).filter(k => k in data).map(k => [k, data[k]]));
   window.chrome = {
     i18n: { getUILanguage: () => lang },
-    runtime: { id: 'preview', getManifest: () => ({ version: '2.2.0' }), getURL: p => '../' + p, onMessage: { addListener() {} }, sendMessage: (m, cb) => { const r = { success: false }; cb?.(r); return Promise.resolve(r); } },
+    runtime: { id: 'preview', getManifest: () => ({ version: '2.2.0' }), getURL: p => '../' + p, onMessage: { addListener() {} }, sendMessage: (m, cb) => {
+      // Exam suggestion actions mirror the background worker so the preview can be clicked through.
+      if (m.action === 'resolveExamSuggestion') data.examSuggestions = data.examSuggestions.map(s => s.id !== m.id ? s : { ...s, resolvedFingerprint: E3ExamDetection.fingerprint(s.candidates), state: m.decision === 'accept' || s.state === 'update' ? 'accepted' : 'dismissed' });
+      const r = { success: ['resolveExamSuggestion', 'mergeExamCandidates', 'scanTimetableExams'].includes(m.action) };
+      cb?.(r); return Promise.resolve(r); } },
     storage: { onChanged: { addListener() {} }, local: { get: async (keys, cb) => { const r = pick(keys); cb?.(r); return r; }, set: async (v, cb) => { Object.assign(data, v); cb?.(); }, remove: async () => {} } }
   };
 })();
 </script>
 <script src="../jszip.min.js"></script>
 <script src="../i18n.js"></script>
+<script src="../exam-detection.js"></script>
 <script src="../content.js"></script>
 </body>
 </html>

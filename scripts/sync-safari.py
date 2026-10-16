@@ -8,7 +8,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 PROJECT = ROOT / 'safari/NYCU E3 Helper'
-FILES = ['background.js', 'content.js', 'i18n.js', 'desktop-notifications.js', 'notification-engine.js',
+FILES = ['background.js', 'content.js', 'i18n.js', 'desktop-notifications.js', 'notification-engine.js', 'exam-detection.js',
          'notification-settings.js', 'notification-settings.html',
          'notification-settings.css', 'jszip.min.js', '128.png', '_locales']
 
