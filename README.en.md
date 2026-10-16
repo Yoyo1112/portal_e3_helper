@@ -27,9 +27,9 @@ Install from the [Chrome Web Store](https://chromewebstore.google.com/detail/nyc
 1. Download `nycu-e3-helper-<version>.zip` from the [latest release](https://github.com/Yoyo1112/portal_e3_helper/releases/latest) and unzip it. The zip contains only the browser extension, without the Safari projects, tests or docs. Alternatively, clone this repository.
 2. Open `chrome://extensions/`, `edge://extensions/` or `brave://extensions/`.
 3. Enable **Developer mode**, select **Load unpacked**, and choose the folder containing `manifest.json`.
-4. Open a webpage and click the floating **E3 Helper** button.
+4. Open an E3 webpage and click the floating **E3 Helper** button.
 
-After updating the source, reload the extension and refresh open webpages. Browser internal pages and some restricted pages do not allow the sidebar.
+After updating the source, reload the extension and refresh open webpages. Fresh installs automatically load the sidebar on https://e3.nycu.edu.tw/, https://e3p.nycu.edu.tw/ https://timetable.nycu.edu.tw/ and https://portal.nycu.edu.tw/ without changing browser site access settings; other websites and tabs do not load the sidebar or expose their page content to it.
 
 ## Getting started and language
 
@@ -75,7 +75,7 @@ In **Downloads**, use **Scan this page** on an E3 page, or **Select courses** to
 
 Background sync runs every 60 minutes for assignments, courses and membership checks, and every 30 minutes for announcements and messages. The open sidebar also checks for stale assignment/course data. Manual **Sync** updates assignments and courses; use **Reload** in Announcements for announcements and messages.
 
-The helper can display saved data and load E3 data in the background from ordinary websites. Scheduled announcement and message synchronization only uses existing E3 tabs and skips when none are open. Manual loading may briefly create an inactive E3 tab and close it afterward. Scanning the current page requires opening the relevant E3 page.
+The helper displays its sidebar on the two E3 hosts, timetable and portal by default. E3 data collection stays on E3. Scheduled announcement and message synchronization only uses existing E3 tabs and skips when none are open. Manual loading may briefly create an inactive E3 tab and close it afterward. Scanning the current page requires opening the relevant E3 page.
 
 ## AI settings and privacy
 
