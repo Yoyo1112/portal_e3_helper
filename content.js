@@ -1565,8 +1565,7 @@ style.textContent += `
   .e3-helper-urgent-badge { display: inline-flex; align-items: center; gap: 5px; color: var(--e3-danger); font-size: 11.5px; white-space: nowrap; vertical-align: middle; }
   .e3-helper-urgent-badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
   .e3-helper-exam-badge { display: inline-flex; align-items: center; padding: 0 6px; border: 1px solid var(--e3-accent); border-radius: 4px; color: var(--e3-accent); font-size: 11px; line-height: 16px; white-space: nowrap; }
-  /* Weight, not hue, separates exam types: countdown colors already mean urgency. */
-  .e3-helper-exam-badge.final { background: var(--e3-accent); color: var(--e3-bg); }
+  /* Midterms and finals keep the accent outline; quizzes are neutral. No new hues: countdown colors mean urgency. */
   .e3-helper-exam-badge.quiz, .e3-helper-exam-badge.other { border-color: var(--e3-border-strong); color: var(--e3-text-2); }
   .e3-helper-exam-note { font-size: 12px; color: var(--e3-muted); overflow-wrap: anywhere; }
   .e3-helper-exam-panel { display: grid; gap: 10px; margin: 0 0 12px; padding: 12px; border: 1px solid var(--e3-border-strong); border-radius: 12px; text-align: left; }
