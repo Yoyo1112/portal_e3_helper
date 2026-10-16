@@ -568,7 +568,6 @@
   "考試：": "Exams: ",
   "掃描中…": "Scanning…",
   "掃描課綱與公告": "Scan schedules and announcements",
-  "讀取 syllabus PDF": "Read syllabus PDFs",
   "考試待確認": "Exams to confirm",
   "考試日期來自課綱進度表、公告、信件或 syllabus，加入前請確認。": "Exam dates come from course schedules, announcements, messages or syllabi. Confirm before adding.",
   "考試資料更新失敗": "Failed to update exam data",
@@ -578,11 +577,7 @@
   "待確認的考試數量：": "Exams to confirm: ",
   "沒有找到新的考試": "No new exams found",
   "請在 E3 網站上使用此功能": "Use this feature on the E3 website",
-  "從 syllabus PDF 找考試": "Find exams in syllabus PDFs",
   "正在尋找課程中的 syllabus 檔案…": "Looking for syllabus files in your courses…",
-  "沒有找到名稱含 Syllabus、課綱或進度的 PDF。": "No PDFs named Syllabus, 課綱 or 進度 were found.",
-  "勾選的 PDF 會上傳給 ": "Selected PDFs will be uploaded to ",
-  " 讀取考試日期；檔案內容可能包含課程資料。": " to read exam dates. Files may contain course data.",
   "已讀取過": "Already read",
   "上傳並讀取": "Upload and read",
   "正在讀取": "Reading",
@@ -591,7 +586,21 @@
   " 個考試日期": " exam dates in syllabi",
   "考試功能失敗：": "Exam feature failed: ",
   "不是 PDF 檔案": "Not a PDF file",
-  "檔案過大，無法交給 AI 讀取": "The file is too large for AI reading"
+  "檔案過大，無法交給 AI 讀取": "The file is too large for AI reading",
+  "課業": "Coursework",
+  "新增作業或考試": "Add assignment or exam",
+  "無法讀取 Word 檔內容": "Could not read the Word file",
+  "沒有找到名稱含 Syllabus、課綱或進度的 PDF 或 Word 檔。": "No PDF or Word files named Syllabus, 課綱 or 進度 were found.",
+  "勾選的檔案會交給 ": "Selected files will be sent to ",
+  " 讀取考試日期（Word 檔只送出文字）；內容可能包含課程資料。": " to read exam dates (only the text of Word files is sent). Files may contain course data.",
+  "從 syllabus 找考試": "Find exams in syllabi",
+  "讀取 syllabus 檔案": "Read syllabus files",
+  "找到的 syllabus 都是 PDF，需要先在設定中啟用 AI 才能讀取。": "The syllabi found are PDFs. Enable AI in Settings to read them.",
+  "未啟用 AI：只在本機讀取 Word 檔中的週次表，不會上傳。PDF 需要啟用 AI。": "AI is off: only the weekly tables in Word files are read, locally, without uploading. PDFs need AI.",
+  "全部加入（使用預選日期）": "Add all (preselected dates)",
+  "要加入 ": "Add ",
+  " 個考試嗎？每個都會使用預選的日期。": " exams? Each uses its preselected date.",
+  "在本機讀取": "Read locally"
 };
   const pattern = new RegExp(Object.keys(english).sort((a, b) => b.length - a.length)
     .map(key => key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|'), 'g');

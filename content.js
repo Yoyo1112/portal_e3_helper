@@ -1578,6 +1578,10 @@ style.textContent += `
   .e3-helper-exam-actions button, .e3-helper-exam-link { min-height: 30px; padding: 0 12px; border-radius: 15px; font-size: 12px; cursor: pointer; }
   .e3-helper-exam-link { min-height: 0; padding: 0; border: 0; background: transparent; color: var(--e3-text); text-decoration: underline; text-underline-offset: 3px; }
   .e3-helper-exam-warning { font-size: 12px; color: var(--e3-warning); }
+  .e3-helper-kind-filter { margin: 0 0 4px; }
+  .e3-helper-kind-btn { min-height: 32px; padding: 0; background: transparent; border: 0; border-bottom: 1.5px solid transparent; border-radius: 0; color: var(--e3-muted); font-size: 12.5px; cursor: pointer; }
+  .e3-helper-kind-btn:hover { color: var(--e3-text); }
+  .e3-helper-kind-btn.active { color: var(--e3-text); border-bottom-color: var(--e3-accent); font-weight: var(--e3-weight-heading); }
   .e3-helper-assignment-deadline { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 4px 8px; font-variant-numeric: tabular-nums; }
   .e3-helper-assignment-actions { display: flex; align-items: center; gap: 14px; margin-left: auto; }
   .e3-helper-assignment-countdown { font-family: inherit; font-size: 12px; line-height: 1.2; font-variant-numeric: tabular-nums; color: var(--e3-text); }
@@ -2188,7 +2192,7 @@ function createSidebar() {
     // 作業倒數 tab
     const assignmentTab = document.createElement('button');
     assignmentTab.className = 'e3-helper-tab active';
-    assignmentTab.innerHTML = uiText('作業');
+    assignmentTab.innerHTML = uiText('課業');
     assignmentTab.dataset.tab = 'assignments';
     assignmentTab.title = uiText('作業倒數');
 
@@ -2273,8 +2277,8 @@ function createSidebar() {
     addAssignmentBtn.innerHTML = uiText(' 手動新增作業');
     const assignmentToolbar = document.createElement('div');
     assignmentToolbar.className = 'e3-helper-section-toolbar';
-    assignmentToolbar.innerHTML = uiText('<h2>作業</h2>');
-    addAssignmentBtn.textContent = uiText('新增作業');
+    assignmentToolbar.innerHTML = uiText('<h2>課業</h2>');
+    addAssignmentBtn.textContent = uiText('新增作業或考試');
     assignmentToolbar.appendChild(addAssignmentBtn);
     assignmentContent.appendChild(assignmentToolbar);
 
@@ -4173,7 +4177,17 @@ async function updateSidebarContent() {
     return;
   }
 
-  listContainer.innerHTML = examPanel + sortedAssignments.map(assignment => {
+  // 類型篩選：全部／作業／考試。
+  const examCount = sortedAssignments.filter(assignment => E3ExamDetection.isExam(assignment)).length;
+  const kindFilter = renderAssignmentKindFilter({ all: sortedAssignments.length, assignment: sortedAssignments.length - examCount, exam: examCount });
+  const visibleAssignments = sortedAssignments.filter(assignment =>
+    assignmentKindFilter === 'all' || (assignmentKindFilter === 'exam') === E3ExamDetection.isExam(assignment));
+  if (visibleAssignments.length === 0) {
+    listContainer.innerHTML = examPanel + kindFilter + uiText('<div class="e3-helper-no-assignments">此篩選條件下沒有項目</div>');
+    return;
+  }
+
+  listContainer.innerHTML = examPanel + kindFilter + visibleAssignments.map(assignment => {
     const isExamItem = E3ExamDetection.isExam(assignment);
     const countdown = isExamItem ? formatExamCountdown(assignment) : formatCountdown(assignment.deadline);
     const deadlineDate = new Date(assignment.deadline);
@@ -6835,6 +6849,12 @@ let dailyDigestInFlight = false;
 // 偵測到的考試只是建議；使用者按「加入」後才會進入作業清單。
 let examSuggestions = [];
 let examScanInFlight = false;
+let assignmentKindFilter = 'all';
+
+function renderAssignmentKindFilter(counts) {
+  const option = (kind, label) => `<button type="button" class="e3-helper-kind-btn ${assignmentKindFilter === kind ? 'active' : ''}" data-kind-filter="${kind}" aria-pressed="${assignmentKindFilter === kind}">${uiText(label)} (${counts[kind]})</button>`;
+  return `<div class="e3-helper-filter-row e3-helper-kind-filter" role="group" aria-label="${escapeHtml(uiText('類型：'))}"><div class="e3-helper-filter-label">${uiText('類型：')}</div>${option('all', '全部')}${option('assignment', '作業')}${option('exam', '考試')}</div>`;
+}
 const EXAM_SOURCE_LABELS = { timetable: '課綱進度表', announcement: '公告', message: '信件', syllabusFile: '教師 syllabus', manual: '手動加入的考試' };
 
 async function loadExamSuggestions() {
@@ -6903,10 +6923,10 @@ function renderExamSuggestionPanel(context) {
   const pending = examSuggestions.filter(s => s.state === 'new' || s.state === 'update');
   const tools = ui`<div class="e3-helper-exam-tools"><span>考試：</span>
     <button type="button" class="e3-helper-exam-link" data-exam-action="scan" ${examScanInFlight ? 'disabled' : ''}>${examScanInFlight ? uiText('掃描中…') : uiText('掃描課綱與公告')}</button>
-    <button type="button" class="e3-helper-exam-link" data-exam-action="syllabus">讀取 syllabus PDF</button></div>`;
+    <button type="button" class="e3-helper-exam-link" data-exam-action="syllabus">讀取 syllabus 檔案</button></div>`;
   if (!pending.length) return context === 'assignments' ? tools : '';
   return `${context === 'assignments' ? tools : ''}<section class="e3-helper-exam-panel" aria-label="${escapeHtml(uiText('考試待確認'))}">
-    <div class="e3-helper-exam-panel-head"><h4>${uiText('考試待確認')} (${pending.length})</h4></div>
+    <div class="e3-helper-exam-panel-head"><h4>${uiText('考試待確認')} (${pending.length})</h4>${pending.length > 1 ? `<button type="button" class="e3-helper-exam-link" data-exam-action="accept-all">${uiText('全部加入（使用預選日期）')}</button>` : ''}</div>
     ${pending.map((suggestion, index) => renderExamSuggestionCard(suggestion, `${context}-${index}`)).join('')}
     <p class="e3-helper-exam-note" style="margin: 0;">${uiText('考試日期來自課綱進度表、公告、信件或 syllabus，加入前請確認。')}</p>
   </section>`;
@@ -6917,6 +6937,22 @@ async function refreshExamViews() {
   if (document.querySelector('.e3-helper-content[data-content="assignments"].active')) await updateSidebarContent();
   const digestExams = document.getElementById('e3-helper-digest-exams');
   if (digestExams) digestExams.innerHTML = renderExamSuggestionPanel('digest');
+}
+
+// 一次加入所有待確認考試，各自使用預選（優先序最高）的日期。
+async function acceptAllExamSuggestions() {
+  const pending = examSuggestions.filter(s => s.state === 'new' || s.state === 'update');
+  if (!pending.length || !confirm(ui`要加入 ${pending.length} 個考試嗎？每個都會使用預選的日期。`)) return;
+  for (const suggestion of pending) {
+    const chosen = E3ExamDetection.preferredCandidate(suggestion.candidates);
+    const existing = allAssignments.find(a => E3ExamDetection.isExam(a) && a.examKey === suggestion.id);
+    if (existing) Object.assign(existing, E3ExamDetection.toExamAssignment(suggestion, chosen, { eventId: existing.eventId, name: existing.name }));
+    else allAssignments.push(E3ExamDetection.toExamAssignment(suggestion, chosen));
+  }
+  await saveAssignmentsImmediate();
+  for (const suggestion of pending) await sendExamMessage({ action: 'resolveExamSuggestion', id: suggestion.id, decision: 'accept' });
+  showTemporaryMessage(uiText('考試已加入作業清單'));
+  await refreshExamViews();
 }
 
 async function resolveExamSuggestionFromCard(card, decision) {
@@ -7023,39 +7059,41 @@ async function runExamScan({ force = true } = {}) {
   else showTemporaryMessage(pending ? `${uiText('待確認的考試數量：')}${pending}` : uiText('沒有找到新的考試'));
 }
 
-// ---- 教師 syllabus PDF（逐檔同意上傳給 AI）----
+// ---- 教師 syllabus（PDF／Word，逐檔同意交給 AI）----
+// 「文件」索引一次列出課程所有檔案與所在資料夾名稱，名稱打錯（如 syllabue）也能比對。
 async function findSyllabusFiles() {
   const files = [];
   const seen = new Set();
-  const parse = html => new DOMParser().parseFromString(html, 'text/html');
   for (const course of allCourses) {
     if (!E3ExamDetection.parseCourseCode(course.fullname)) continue;
     try {
-      const page = parse(await (await fetch(`https://e3p.nycu.edu.tw/course/view.php?id=${course.id}`, { credentials: 'include' })).text());
-      for (const activity of page.querySelectorAll('li.activity')) {
-        const link = activity.querySelector('a[href*="/mod/folder/view.php"], a[href*="/mod/resource/view.php"]');
-        const name = (activity.querySelector('.instancename')?.textContent || link?.textContent || '').replace(/\s+/g, ' ').trim();
-        if (!link || !E3ExamDetection.isSyllabusFileName(name)) continue;
-        const add = (url, fileName) => {
-          if (seen.has(url)) return;
-          seen.add(url);
-          files.push({ courseId: String(course.id), course: course.fullname, url, name: fileName });
-        };
-        if (link.href.includes('/mod/resource/')) {
-          add(`${link.href}${link.href.includes('?') ? '&' : '?'}redirect=1`, name);
-          continue;
-        }
-        const folder = parse(await (await fetch(link.href, { credentials: 'include' })).text());
-        folder.querySelectorAll('#region-main a[href*="/pluginfile.php/"]').forEach(fileLink => {
-          const fileName = fileLink.textContent.trim();
-          if (/\.pdf($|\?)/i.test(fileName) || /\.pdf(\?|$)/i.test(new URL(fileLink.href).pathname)) add(fileLink.href.replace(/[?&]forcedownload=1/, ''), fileName);
-        });
+      const response = await fetch(`https://e3p.nycu.edu.tw/local/courseextension/index.php?courseid=${course.id}`, { credentials: 'include' });
+      const doc = new DOMParser().parseFromString(await response.text(), 'text/html');
+      for (const link of doc.querySelectorAll('#region-main a[href*="/pluginfile.php/"]')) {
+        const name = link.textContent.trim();
+        const folder = (link.closest('tr')?.querySelector('td')?.textContent || '').replace(/\s+/g, ' ').trim();
+        const type = E3ExamDetection.syllabusFileType(name);
+        if (!type || !(E3ExamDetection.isSyllabusFileName(name) || E3ExamDetection.isSyllabusFileName(folder))) continue;
+        const url = link.href.replace(/[?&]forcedownload=1/, '');
+        if (seen.has(url)) continue;
+        seen.add(url);
+        files.push({ courseId: String(course.id), course: course.fullname, url, name, type });
       }
     } catch (error) {
       console.warn(`E3 Helper: 無法掃描 ${course.fullname} 的 syllabus`, error);
     }
   }
   return files;
+}
+
+// Word 檔在本機解壓取出文字，只把文字交給 AI。
+async function extractDocxText(buffer) {
+  const zip = await JSZip.loadAsync(buffer);
+  const xml = await zip.file('word/document.xml')?.async('string');
+  if (!xml) throw new Error(uiText('無法讀取 Word 檔內容'));
+  return xml.replace(/<w:tab\/>/g, '\t').replace(/<\/w:p>\s*<\/w:tc>/g, ' | ').replace(/<\/w:(p|tr)>/g, '\n').replace(/<[^>]+>/g, '')
+    .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, '&')
+    .replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim().slice(0, 30000);
 }
 
 function arrayBufferToBase64(buffer) {
@@ -7069,19 +7107,31 @@ async function readSyllabusFile(file, config) {
   const response = await fetch(file.url, { credentials: 'include' });
   if (!response.ok) throw new Error(`HTTP ${response.status}`);
   const buffer = await response.arrayBuffer();
-  const head = new TextDecoder().decode(new Uint8Array(buffer, 0, Math.min(5, buffer.byteLength)));
-  if (head !== '%PDF-') throw new Error(uiText('不是 PDF 檔案'));
   if (buffer.byteLength > 15 * 1024 * 1024) throw new Error(uiText('檔案過大，無法交給 AI 讀取'));
+  const head = new TextDecoder().decode(new Uint8Array(buffer, 0, Math.min(5, buffer.byteLength)));
+  if (file.type === 'pdf' && head !== '%PDF-') throw new Error(uiText('不是 PDF 檔案'));
+  if (file.type === 'docx' && !head.startsWith('PK')) throw new Error(uiText('無法讀取 Word 檔內容'));
   const { timetableOutlineCache = {} } = await chrome.storage.local.get(['timetableOutlineCache']);
   const code = E3ExamDetection.parseCourseCode(file.course);
   const outline = code && timetableOutlineCache[`${code.acy}-${code.sem}-${code.cosId}`];
   // 只有週次的 syllabus 需要週次對應日期才能換算。
   const weekDates = Object.fromEntries((outline?.rows || []).map(row => [String(row.week_id), String(row.class_date || '').slice(0, 10)]));
-  const prompt = E3ExamDetection.buildExtractionPrompt([{ source: 1, course: file.course, file: file.name, classWeekDates: weekDates }],
-    { language: E3HelperI18n.language, file: true });
-  const result = await sendExamMessage({ action: 'callAIWithFile', provider: config.provider, apiKey: config.apiKey, model: config.model,
-    content: prompt, file: { name: file.name, mimeType: 'application/pdf', data: arrayBufferToBase64(buffer) } });
-  return E3ExamDetection.parseExamExtraction(result.data, [{ courseId: file.courseId, course: file.course, type: 'syllabusFile',
+  const record = { source: 1, course: file.course, file: file.name, classWeekDates: weekDates };
+  let text;
+  if (file.type === 'docx' && !config) {
+    // 沒有 AI 時讀取 Word 檔中的週次表（日期＋考試字樣），不上傳任何內容。
+    return E3ExamDetection.detectScheduleTextExams(await extractDocxText(buffer), {
+      courseId: file.courseId, course: file.course, classTime: outline?.classTime, url: file.url, label: file.name, seenAt: Date.now() });
+  }
+  if (file.type === 'docx') {
+    const prompt = E3ExamDetection.buildExtractionPrompt([{ ...record, text: await extractDocxText(buffer) }], { language: E3HelperI18n.language });
+    text = await callSummaryProvider(prompt, config, 2048);
+  } else {
+    const prompt = E3ExamDetection.buildExtractionPrompt([record], { language: E3HelperI18n.language, file: true });
+    text = (await sendExamMessage({ action: 'callAIWithFile', provider: config.provider, apiKey: config.apiKey, model: config.model,
+      content: prompt, file: { name: file.name, mimeType: 'application/pdf', data: arrayBufferToBase64(buffer) } })).data;
+  }
+  return E3ExamDetection.parseExamExtraction(text, [{ courseId: file.courseId, course: file.course, type: 'syllabusFile',
     url: file.url, label: file.name, seenAt: Date.now() }]);
 }
 
@@ -7096,36 +7146,39 @@ async function openSyllabusScan() {
     return;
   }
   const { aiSettings = {}, syllabusExamCache = {} } = await chrome.storage.local.get(['aiSettings', 'syllabusExamCache']);
-  const config = getAISummaryConfig(aiSettings);
-  if (!aiSettings.enabled || !config.apiKey || !config.model) {
-    showTemporaryMessage(uiText('請先在設定中啟用 AI 摘要並設定所選供應商的 API Key 與模型'), 'warning');
-    return;
-  }
+  const aiConfig = getAISummaryConfig(aiSettings);
+  // 沒有 AI 時仍可在本機讀取 Word 週次表；PDF 需要 AI。
+  const config = aiSettings.enabled && aiConfig.apiKey && aiConfig.model ? aiConfig : null;
   closeSyllabusDialog();
   const modal = document.createElement('div');
   modal.id = 'e3-helper-syllabus-modal';
   modal.style.cssText = 'display: flex; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); z-index: 10001; justify-content: center; align-items: center;';
   modal.innerHTML = ui`<div role="dialog" aria-modal="true" aria-labelledby="e3-helper-syllabus-title" style="border-radius: 12px; padding: 24px; width: 90%; max-width: 520px; max-height: 80vh; overflow: auto; box-sizing: border-box;" class="e3-helper-surface e3-helper-flat">
-    <h3 id="e3-helper-syllabus-title" style="margin: 0 0 12px;" class="e3-helper-heading-text e3-helper-body-text">從 syllabus PDF 找考試</h3>
+    <h3 id="e3-helper-syllabus-title" style="margin: 0 0 12px;" class="e3-helper-heading-text e3-helper-body-text">從 syllabus 找考試</h3>
     <div id="e3-helper-syllabus-body" class="e3-helper-small-text e3-helper-body-text">正在尋找課程中的 syllabus 檔案…</div>
   </div>`;
   modal.addEventListener('click', event => { if (event.target === modal) closeSyllabusDialog(); });
   document.body.appendChild(modal);
   const body = modal.querySelector('#e3-helper-syllabus-body');
-  const files = await findSyllabusFiles();
+  const allFiles = await findSyllabusFiles();
+  const files = config ? allFiles : allFiles.filter(file => file.type === 'docx');
   if (!document.body.contains(modal)) return;
   if (!files.length) {
-    body.innerHTML = ui`<p>沒有找到名稱含 Syllabus、課綱或進度的 PDF。</p><div class="e3-helper-exam-actions"><button type="button" class="e3-helper-secondary" data-syllabus-close>關閉</button></div>`;
+    body.innerHTML = allFiles.length
+      ? ui`<p>找到的 syllabus 都是 PDF，需要先在設定中啟用 AI 才能讀取。</p><div class="e3-helper-exam-actions"><button type="button" class="e3-helper-secondary" data-syllabus-close>關閉</button></div>`
+      : ui`<p>沒有找到名稱含 Syllabus、課綱或進度的 PDF 或 Word 檔。</p><div class="e3-helper-exam-actions"><button type="button" class="e3-helper-secondary" data-syllabus-close>關閉</button></div>`;
     body.querySelector('[data-syllabus-close]').addEventListener('click', closeSyllabusDialog);
     return;
   }
-  const provider = config.provider === 'gemini' ? 'Gemini' : 'OpenAI';
-  body.innerHTML = `<p style="margin: 0 0 10px;">${ui`勾選的 PDF 會上傳給 ${provider} 讀取考試日期；檔案內容可能包含課程資料。`}</p>
+  const provider = config?.provider === 'gemini' ? 'Gemini' : 'OpenAI';
+  const notice = config ? ui`勾選的檔案會交給 ${provider} 讀取考試日期（Word 檔只送出文字）；內容可能包含課程資料。`
+    : uiText('未啟用 AI：只在本機讀取 Word 檔中的週次表，不會上傳。PDF 需要啟用 AI。');
+  body.innerHTML = `<p style="margin: 0 0 10px;">${notice}</p>
     <fieldset style="display: grid; gap: 6px; margin: 0 0 12px; padding: 0; border: 0;">${files.map((file, index) => `<label style="display: flex; gap: 6px; align-items: flex-start; overflow-wrap: anywhere;">
       <input type="checkbox" value="${index}" ${syllabusExamCache[file.url] ? '' : 'checked'}>
       <span>${escapeHtml(file.name)}<br><span class="e3-helper-exam-note">${escapeHtml(file.course)}${syllabusExamCache[file.url] ? ` · ${uiText('已讀取過')}` : ''}</span></span></label>`).join('')}</fieldset>
     <div id="e3-helper-syllabus-status" class="e3-helper-exam-note" role="status" aria-live="polite"></div>
-    <div class="e3-helper-exam-actions"><button type="button" class="e3-helper-primary" data-syllabus-read>${uiText('上傳並讀取')}</button><button type="button" class="e3-helper-secondary" data-syllabus-close>${uiText('取消')}</button></div>`;
+    <div class="e3-helper-exam-actions"><button type="button" class="e3-helper-primary" data-syllabus-read>${uiText(config ? '上傳並讀取' : '在本機讀取')}</button><button type="button" class="e3-helper-secondary" data-syllabus-close>${uiText('取消')}</button></div>`;
   body.querySelector('[data-syllabus-close]').addEventListener('click', closeSyllabusDialog);
   body.querySelector('[data-syllabus-read]').addEventListener('click', async event => {
     const selected = [...body.querySelectorAll('input[type="checkbox"]:checked')].map(input => files[Number(input.value)]);
@@ -7155,7 +7208,18 @@ async function openSyllabusScan() {
 }
 
 function bindExamSuggestionEvents() {
+  chrome.storage.local.get(['assignmentKindFilter']).then(storage => {
+    if (['assignment', 'exam'].includes(storage.assignmentKindFilter)) assignmentKindFilter = storage.assignmentKindFilter;
+  }).catch(() => {});
   document.addEventListener('click', event => {
+    const kindButton = event.target?.closest?.('[data-kind-filter]');
+    if (kindButton) {
+      event.preventDefault();
+      assignmentKindFilter = kindButton.dataset.kindFilter;
+      chrome.storage.local.set({ assignmentKindFilter }).catch(() => {});
+      updateSidebarContent();
+      return;
+    }
     const button = event.target?.closest?.('[data-exam-action]');
     if (!button) return;
     event.preventDefault();
@@ -7163,6 +7227,7 @@ function bindExamSuggestionEvents() {
     const action = button.dataset.examAction;
     const run = action === 'scan' ? runExamScan()
       : action === 'syllabus' ? openSyllabusScan()
+      : action === 'accept-all' ? acceptAllExamSuggestions()
         : resolveExamSuggestionFromCard(button.closest('[data-exam-suggestion]'), action === 'accept' ? 'accept' : 'dismiss');
     run.catch(error => showTemporaryMessage(ui`考試功能失敗：${error.message}`, 'error'));
   });

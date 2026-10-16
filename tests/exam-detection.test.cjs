@@ -128,6 +128,14 @@ test('past suggestions expire and quizzes are keyed per day', () => {
   assert.deepEqual(merged.map(s => s.id), ['exam:1:quiz:2026-10-22', 'exam:1:quiz:2026-10-29']);
   assert.ok(exams.isSyllabusFileName('2026 Syllabus課程綱要.pdf'));
   assert.ok(!exams.isSyllabusFileName('Chapter 1 PPT.pdf'));
+  // Real E3 folder name typo; the file inside is a Word document.
+  for (const name of ['syllabue', 'Sylabus 2026', 'syllebus', '公司理財_syllabus_2026.docx']) assert.ok(exams.isSyllabusFileName(name), name);
+  assert.ok(!exams.isSyllabusFileName('symbol table'));
+  assert.equal(exams.syllabusFileType('公司理財_syllabus_2026.docx'), 'docx');
+  assert.equal(exams.syllabusFileType('2026 Fall Semester大學部.PDF'), 'pdf');
+  assert.equal(exams.syllabusFileType('Ch01.pptx'), null);
+  assert.match(exams.buildExtractionPrompt([{ source: 1, classWeekDates: { 9: '2026-11-05' }, text: 'Week 9 midterm' }]), /convert the week/);
+  assert.doesNotMatch(exams.buildExtractionPrompt([{ source: 1, title: 'Quiz' }]), /convert the week/);
 });
 
 // Background worker: the exam section between its section marker and the auto-sync section.
@@ -188,4 +196,34 @@ test('worker resolves suggestions and sends PDFs in each provider format', async
   assert.deepEqual(bodies[1].body.input[0].content[0], { type: 'input_file', filename: 'Syllabus.pdf', file_data: 'data:application/pdf;base64,JVBERi0=' });
   assert.equal(bodies[1].body.store, false);
   await assert.rejects(worker.callAIWithFile({ provider: 'openai', apiKey: 'k', model: 'm', content: 'p', file: { ...file, mimeType: 'text/html' } }), /Unsupported file/);
+});
+
+test('Word syllabi are read locally as text, tables included', async () => {
+  const content = fs.readFileSync(path.join(__dirname, '../content.js'), 'utf8');
+  const start = content.indexOf('async function extractDocxText');
+  const fn = content.slice(start, content.indexOf('\n}\n', start) + 2);
+  const JSZip = require('../jszip.min.js');
+  const context = vm.createContext({ JSZip, uiText: text => text });
+  vm.runInContext(fn, context);
+  const zip = new JSZip();
+  zip.file('word/document.xml', '<w:document><w:body><w:p><w:r><w:t>Week</w:t></w:r><w:r><w:tab/><w:t>Topic &amp; exam</w:t></w:r></w:p>' +
+    '<w:tbl><w:tr><w:tc><w:p><w:r><w:t>9</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>Midterm &lt;M101&gt;</w:t></w:r></w:p></w:tc></w:tr></w:tbl></w:body></w:document>');
+  const text = await context.extractDocxText(await zip.generateAsync({ type: 'arraybuffer' }));
+  assert.match(text, /Week\tTopic & exam/);
+  assert.match(text, /^9 \| Midterm <M101> \|$/m);
+  const empty = new JSZip();
+  empty.file('other.xml', '<x/>');
+  await assert.rejects(context.extractDocxText(await empty.generateAsync({ type: 'arraybuffer' })), /無法讀取 Word 檔內容/);
+});
+
+test('weekly tables in Word syllabi yield exams without AI', () => {
+  // Rows extracted from the real 公司理財 syllabus (.docx).
+  const text = ['1.學期作業、考試、評量', '1. Final exam, 40% 3. Final Report (Corporate Finance Events), 40%.',
+    '2 | 2026-09-14(一) | Ch14 Introduction to Corporate Financing | Quiz 1 | ', '8 | 2026-10-26(一) | Ch17 Payout Policy | ',
+    '9 | 2026-11-02(一) | Corporate Finance and Event study Method | Quiz 6 | ', '15 | 2026-12-14(一) | Final Report | ',
+    '16 | 2026-12-21(一) | Final Exam | '].join('\n');
+  const found = exams.detectScheduleTextExams(text, { courseId: '25517', course: '公司理財', classTime: 'M567-M-b09[GF]', url: 'docx', label: 'syllabus.docx', seenAt: now });
+  assert.deepEqual(found.map(c => [c.examType, exams.dayKey(c.deadline), new Date(c.deadline).getHours(), c.source]), [
+    ['quiz', '2026-09-14', 13, 'syllabusFile'], ['quiz', '2026-11-02', 13, 'syllabusFile'], ['final', '2026-12-21', 13, 'syllabusFile']]);
+  assert.equal(found[1].excerpt, '9 · 2026-11-02(一) · Corporate Finance and Event study Method · Quiz 6 ·');
 });
