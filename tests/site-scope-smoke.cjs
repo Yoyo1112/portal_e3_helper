@@ -17,8 +17,8 @@ const assert = require('node:assert/strict');
       contentType: 'text/html', body: '<!doctype html><html><head></head><body>Offline fixture</body></html>'
     }));
     const worker = context.serviceWorkers()[0] || await context.waitForEvent('serviceworker');
-    const allowed = ['https://e3.nycu.edu.tw/', 'https://e3p.nycu.edu.tw/', 'https://timetable.nycu.edu.tw/'];
-    const denied = ['https://github.com/', 'https://portal.nycu.edu.tw/', 'https://timetable.nycu.edu.tw.evil.test/'];
+    const allowed = ['https://e3.nycu.edu.tw/', 'https://e3p.nycu.edu.tw/', 'https://timetable.nycu.edu.tw/', 'https://portal.nycu.edu.tw/'];
+    const denied = ['https://github.com/', 'https://www.nycu.edu.tw/', 'https://portal.nycu.edu.tw.evil.test/', 'https://timetable.nycu.edu.tw.evil.test/'];
     await worker.evaluate(async () => {
       await chrome.storage.local.set({ lastSeenVersion: chrome.runtime.getManifest().version,
         assignments: [], courses: [], announcements: [], lastSyncTime: Date.now() });
@@ -38,7 +38,7 @@ const assert = require('node:assert/strict');
       }
       await page.close();
     }
-    console.log('Fresh install passed: E3 + timetable granted and sidebar visible by default; unrelated sites denied and no sidebar.');
+    console.log('Fresh install passed: E3 + timetable + portal granted and sidebar visible by default; unrelated sites denied and no sidebar.');
   } finally {
     await context?.close();
     fs.rmSync(profile, { recursive: true, force: true });

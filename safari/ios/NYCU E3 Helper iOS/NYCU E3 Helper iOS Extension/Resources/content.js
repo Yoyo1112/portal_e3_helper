@@ -2,11 +2,12 @@
 // 優化 E3 使用體驗
 (function() {
 'use strict';
-// E3 and timetable initialize the sidebar by default. E3 collection stays on E3.
+// E3, timetable and portal initialize the sidebar by default. E3 collection stays on E3.
 const isE3Site = location.protocol === 'https:' &&
   ['e3.nycu.edu.tw', 'e3p.nycu.edu.tw'].includes(location.hostname);
 const isTimetableSite = location.protocol === 'https:' && location.hostname === 'timetable.nycu.edu.tw';
-if (!isE3Site && !isTimetableSite) return;
+const isPortalSite = location.protocol === 'https:' && location.hostname === 'portal.nycu.edu.tw';
+if (!isE3Site && !isTimetableSite && !isPortalSite) return;
 const uiText = E3HelperI18n.text;
 const ui = E3HelperI18n.template;
 
