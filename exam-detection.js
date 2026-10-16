@@ -213,6 +213,11 @@ Sources JSON:
 ${JSON.stringify(records)}`;
   }
 
+  // Models sometimes write placeholders such as "null" instead of JSON null.
+  function cleanField(value) {
+    return typeof value === 'string' && !/^\s*(null|none|n\/?a|unknown|tbd|無|未提供|未知|-+)?\s*$/i.test(value) ? value.trim() : '';
+  }
+
   // Validate model output: known sources, valid enum and dates near the current semester only.
   function parseExamExtraction(text, sources, { now = Date.now() } = {}) {
     let data;
@@ -226,13 +231,15 @@ ${JSON.stringify(records)}`;
       if (!EXAM_TYPES.includes(entry.examType)) continue;
       const date = parseYmd(entry.date);
       if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(entry.date) || date.getTime() < now - 30 * DAY || date.getTime() > now + 240 * DAY) continue;
-      const time = typeof entry.time === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(entry.time) ? entry.time : null;
+      // Models also answer "1:20 PM", "13:20:00" or "下午1:20"; anything else means the time is unknown.
+      const clock = typeof entry.time === 'string' ? entry.time.trim().match(TIME_PATTERN) : null;
+      const time = clock && clock.index === 0 ? parseClock(clock) : null;
       const source = sources[entry.source - 1];
       out.push(candidate({
         courseId: source.courseId, course: source.course, examType: entry.examType,
         deadline: atTime(date, time || '08:00'), timeKnown: time ? 'exact' : 'date-only',
         source: source.type, url: source.url, label: source.label, excerpt: source.label,
-        scope: typeof entry.scope === 'string' ? entry.scope : '', location: typeof entry.location === 'string' ? entry.location : '',
+        scope: cleanField(entry.scope), location: cleanField(entry.location),
         confidence: 'high', seenAt: source.seenAt
       }));
     }

@@ -1565,6 +1565,9 @@ style.textContent += `
   .e3-helper-urgent-badge { display: inline-flex; align-items: center; gap: 5px; color: var(--e3-danger); font-size: 11.5px; white-space: nowrap; vertical-align: middle; }
   .e3-helper-urgent-badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
   .e3-helper-exam-badge { display: inline-flex; align-items: center; padding: 0 6px; border: 1px solid var(--e3-accent); border-radius: 4px; color: var(--e3-accent); font-size: 11px; line-height: 16px; white-space: nowrap; }
+  /* Weight, not hue, separates exam types: countdown colors already mean urgency. */
+  .e3-helper-exam-badge.final { background: var(--e3-accent); color: var(--e3-bg); }
+  .e3-helper-exam-badge.quiz, .e3-helper-exam-badge.other { border-color: var(--e3-border-strong); color: var(--e3-text-2); }
   .e3-helper-exam-note { font-size: 12px; color: var(--e3-muted); overflow-wrap: anywhere; }
   .e3-helper-exam-panel { display: grid; gap: 10px; margin: 0 0 12px; padding: 12px; border: 1px solid var(--e3-border-strong); border-radius: 12px; text-align: left; }
   .e3-helper-exam-panel h4 { margin: 0; font-size: 13px; font-weight: 700; color: var(--e3-text); }
@@ -4221,7 +4224,7 @@ async function updateSidebarContent() {
 
     // 緊急標籤
     const urgentBadge = isUrgent ? uiText(isExamItem ? '<span class="e3-helper-urgent-badge">24 小時內開始</span>' : '<span class="e3-helper-urgent-badge">24 小時內到期</span>') : '';
-    const examBadge = isExamItem ? `<span class="e3-helper-exam-badge">${escapeHtml(E3ExamDetection.examName(assignment.examType, '', E3HelperI18n.language))}</span>` : '';
+    const examBadge = isExamItem ? `<span class="e3-helper-exam-badge ${examBadgeClass(assignment.examType)}">${escapeHtml(E3ExamDetection.examName(assignment.examType, '', E3HelperI18n.language))}</span>` : '';
     const examNote = isExamItem ? [
       assignment.timeKnown === 'class-slot' ? uiText('時間依上課時段推估') : '',
       assignment.location ? ui`地點：${escapeHtml(assignment.location)}` : '',
@@ -6857,6 +6860,10 @@ function renderAssignmentKindFilter(counts) {
 }
 const EXAM_SOURCE_LABELS = { timetable: '課綱進度表', announcement: '公告', message: '信件', syllabusFile: '教師 syllabus', manual: '手動加入的考試' };
 
+function examBadgeClass(examType) {
+  return E3ExamDetection.EXAM_TYPES.includes(examType) ? examType : 'other';
+}
+
 async function loadExamSuggestions() {
   const storage = await chrome.storage.local.get(['examSuggestions']);
   examSuggestions = Array.isArray(storage.examSuggestions) ? storage.examSuggestions : [];
@@ -6907,7 +6914,7 @@ function renderExamSuggestionCard(suggestion, index) {
   }).join('');
   const isUpdate = suggestion.state === 'update';
   return `<article class="e3-helper-exam-card" data-exam-suggestion="${escapeHtml(suggestion.id)}" data-exam-index="${index}">
-    <div class="e3-helper-regular-text e3-helper-body-text" style="font-weight: 600;"><span class="e3-helper-exam-badge">${escapeHtml(E3ExamDetection.examName(suggestion.examType, '', E3HelperI18n.language))}</span> ${escapeHtml(suggestion.course || uiText('(未知課程)'))}</div>
+    <div class="e3-helper-regular-text e3-helper-body-text" style="font-weight: 600;"><span class="e3-helper-exam-badge ${examBadgeClass(suggestion.examType)}">${escapeHtml(E3ExamDetection.examName(suggestion.examType, '', E3HelperI18n.language))}</span> ${escapeHtml(suggestion.course || uiText('(未知課程)'))}</div>
     ${isUpdate && confirmed ? `<div class="e3-helper-exam-warning">${ui`已加入的日期是 ${escapeHtml(formatExamCandidateTime(confirmed))}，新來源顯示不同日期。`}</div>` : ''}
     ${!isUpdate && days.size > 1 ? `<div class="e3-helper-exam-warning">${uiText('來源日期不一致，請選擇正確日期。')}</div>` : ''}
     <fieldset><legend class="e3-helper-exam-note">${uiText('選擇日期')}</legend>${options}</fieldset>
