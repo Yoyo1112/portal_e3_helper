@@ -21,7 +21,7 @@ const fs = require('node:fs');
         ] };
       window.storageListeners = [];
       window.chrome = {
-        i18n: { getUILanguage: () => language }, runtime: { getURL: p => native ? `safari-web-extension://test/${p}` : p, sendNativeMessage: async (app, message) => { window.nativeMessage = message; if (message.action === 'showNotification') window.notification = message; return { success: true, permission: 'granted' }; } },
+        i18n: { getUILanguage: () => language }, runtime: { getURL: p => native ? `safari-web-extension://test/${p}` : p, getManifest: () => ({ permissions: native ? ['nativeMessaging'] : [] }), sendNativeMessage: async (app, message) => { window.nativeMessage = message; if (message.action === 'showNotification') window.notification = message; return { success: true, permission: 'granted' }; } },
         storage: { local: { get: async () => window.fixture, set: async value => Object.assign(window.fixture, value) }, onChanged: { addListener: fn => window.storageListeners.push(fn) } },
         notifications: safari ? undefined : { getPermissionLevel: async () => 'granted', create: async (...args) => { window.notification = args; } }
       };
@@ -101,6 +101,10 @@ const fs = require('node:fs');
       assert.equal(await page.locator('.reminder-row').count(), 2);
       await page.locator('#test').click();
       await page.waitForFunction(() => window.notification);
+      if (process.env.SAFARI_NATIVE) {
+        assert.equal(await page.evaluate(() => E3DesktopNotifications.native), true);
+        assert.equal(await page.evaluate(() => window.notification.action), 'showNotification');
+      }
       await page.locator('#desktop').uncheck();
       assert.equal(await page.locator('#preferences').evaluate(element => element.disabled), true);
       await page.locator('#desktop').check();
