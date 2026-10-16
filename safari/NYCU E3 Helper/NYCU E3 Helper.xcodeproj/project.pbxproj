@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
         E30100000000000000000001 /* desktop-notifications.js in Resources */ = {isa = PBXBuildFile; fileRef = E30100000000000000000002 /* desktop-notifications.js */; };
+        E30100000000000000000003 /* exam-detection.js in Resources */ = {isa = PBXBuildFile; fileRef = E30100000000000000000004 /* exam-detection.js */; };
 		47019749306E4721001631FD /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47019748306E4721001631FD /* AppDelegate.swift */; };
 		4701974D306E4721001631FD /* Main.html in Resources */ = {isa = PBXBuildFile; fileRef = 4701974B306E4721001631FD /* Main.html */; };
 		4701974F306E4721001631FD /* Icon.png in Resources */ = {isa = PBXBuildFile; fileRef = 4701974E306E4721001631FD /* Icon.png */; };
@@ -55,6 +56,7 @@
 
 /* Begin PBXFileReference section */
         E30100000000000000000002 /* desktop-notifications.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; name = "desktop-notifications.js"; path = "Resources/desktop-notifications.js"; sourceTree = "<group>"; };
+        E30100000000000000000004 /* exam-detection.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; name = "exam-detection.js"; path = "Resources/exam-detection.js"; sourceTree = "<group>"; };
 		47019745306E4721001631FD /* NYCU E3 Helper.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "NYCU E3 Helper.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		47019748306E4721001631FD /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		4701974C306E4721001631FD /* Base */ = {isa = PBXFileReference; lastKnownFileType = text.html; name = Base; path = Base.lproj/Main.html; sourceTree = "<group>"; };
@@ -151,6 +153,7 @@
 			isa = PBXGroup;
 			children = (
 				E30100000000000000000002 /* desktop-notifications.js */,
+				E30100000000000000000004 /* exam-detection.js */,
                 47019772306E4722001631FD /* notification-settings.js */,
 				47019773306E4722001631FD /* background.js */,
 				47019774306E4722001631FD /* jszip.min.js */,
@@ -268,6 +271,7 @@
 				47019787306E4722001631FD /* i18n.js in Resources */,
 				47019783306E4722001631FD /* notification-engine.js in Resources */,
 				E30100000000000000000001 /* desktop-notifications.js in Resources */,
+				E30100000000000000000003 /* exam-detection.js in Resources */,
                 4701977D306E4722001631FD /* notification-settings.js in Resources */,
 			);
 		};
