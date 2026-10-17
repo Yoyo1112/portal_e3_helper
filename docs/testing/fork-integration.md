@@ -1,6 +1,6 @@
 # Fork integration test build — 2026-10-17
 
-This fork combines upstream main with every upstream PR open at integration time. Upstream PRs remain open; this integration does not merge them upstream. The fork keeps version 3.0.1, its packaging workflow, project link and 1/3/7-day countdown color bands. No new store release or TestFlight upload is implied.
+This fork combines upstream main with every upstream PR open at integration time. Upstream PRs remain open; this integration does not merge them upstream. The fork keeps version 3.0.1 and its packaging workflow as release metadata. Runtime defaults follow upstream: countdowns are urgent below one hour, warning below 24 hours, and normal otherwise; the Help project link points upstream. No new store release or TestFlight upload is implied.
 
 | Source | Verified head | Included behavior |
 | --- | --- | --- |
@@ -31,3 +31,7 @@ The exam module and notification API are both included in the two Safari Xcode r
 6. On macOS/iPad, test sidebar touch/resize and each Safari download link after building/installing the native app.
 
 Authenticated E3, live AI requests, physical Safari/iPad behavior and OS banner visibility still require manual checks. Primary-checkout uncommitted demo/native work was not included because it is outside the upstream PR snapshots.
+
+## Upstream-default audit
+
+On 2026-10-17 the integration was rebuilt independently from upstream main plus the four PR heads above. Every root runtime JS/HTML/CSS file matches that result byte for byte after restoring the countdown thresholds/colors and Help project link. The only manifest difference is the fork release version (3.0.1 versus upstream 2.3.0). New exam, notification, site-scope, Safari and mail/AI fixes remain intact. This supersedes the earlier decision to retain old fork countdown defaults.

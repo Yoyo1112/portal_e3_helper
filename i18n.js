@@ -2,7 +2,6 @@
 (function () {
   'use strict';
   const english = {
-  "倒數顏色：一天內紅色、超過一天至三天琥珀色、超過三天至七天藍色、超過七天綠色；已截止則顯示灰色。": "Countdown colors: red within one day, amber within three days, blue within seven days, green beyond seven days, and gray after the deadline.",
   "請逐一點擊下方連結，Safari 會下載檔案或開啟預覽。": "Click each link below. Safari will download the file or open a preview.",
   "下載連結已備妥，請逐一點擊。": "Download links are ready. Click each one.",
   "無法下載": "Download unavailable",

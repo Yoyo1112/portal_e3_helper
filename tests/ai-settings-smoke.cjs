@@ -34,7 +34,7 @@ const fs = require('node:fs');
         await page.locator(`[data-tab="${tab}"]`).click();
         assert.ok((await page.locator(`[data-content="${tab}"]`).innerText()).trim(),`${tab} renders`);
       }
-      assert.equal(await page.locator('.e3-helper-help a').filter({hasText:'GitHub'}).getAttribute('href'),'https://github.com/Yoyo1112/portal_e3_helper');
+      assert.equal(await page.locator('.e3-helper-help a').filter({hasText:'GitHub'}).getAttribute('href'),'https://github.com/NYCU-Chung/portal_e3_helper');
       await page.locator('[data-tab="assignments"]').click();
       assert.ok((await page.locator('[data-content="assignments"]').innerText()).includes('作業中文原文'));
       await page.locator('#e3-helper-more-btn').click();
@@ -102,7 +102,7 @@ const fs = require('node:fs');
       const requestCount = await page.evaluate(() => window.fixtureRequests.length);
       await page.locator('#e3-helper-test-ai-btn').click();
       assert.equal(await page.evaluate(() => window.fixtureRequests.length),requestCount);
-      assert.ok((await page.locator('#e3-helper-ai-status').innerText()).includes(language==='en'?'Enter an API key and choose a model':'請輸入 API Key 並選擇模型'));
+      assert.ok((await page.locator('#e3-helper-ai-status').innerText()).includes(language==='en'?'Enter an API key and select a model':'請輸入 API Key 並選擇模型'));
       await page.locator('#e3-helper-gemini-model').selectOption('future-flash');
       assert.equal(await page.locator('#e3-helper-gemini-model-id').inputValue(),'future-flash');
       await page.locator('#e3-helper-save-settings').click();

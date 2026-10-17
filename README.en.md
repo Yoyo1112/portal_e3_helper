@@ -49,7 +49,7 @@ Appearance is light by default. To change it, open **More (⋯) → Settings →
 
 Click a card to open its assignment page. Use **Mark as submitted** to change the status, or **Submitted** to mark it as pending again. Use **Add assignment**, **Edit** and **Delete** to manage custom assignments.
 
-Deadlines use your local time zone. Countdowns are red within one day, amber within three days, blue within seven days, green beyond seven days, and gray after the deadline. Submitted assignments disappear after their deadline. Deleted E3 assignments can reappear after syncing.
+Deadlines use your local time zone. Countdowns are red below one hour, amber below 24 hours, use the normal color otherwise, and turn gray after the deadline. Submitted assignments disappear after their deadline. Deleted E3 assignments can reappear after syncing.
 
 ### Announcements and messages
 

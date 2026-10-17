@@ -16,13 +16,14 @@ class FixedDate extends Date {
 }
 const text = value => value;
 const template = (parts, ...values) => parts.reduce((s, part, i) => s + part + (values[i] ?? ''), '');
-test('fork countdown preserves day, three-day and seven-day boundaries', () => {
+test('countdown keeps the original one-hour and 24-hour status boundaries', () => {
   const context = vm.createContext({ Date: FixedDate, uiText: text, ui: template });
   vm.runInContext(functionSource('formatCountdown'), context);
-  const day = 86400000;
+  const hour = 3600000;
   for (const [left, status] of [[-1, 'overdue'], [0, 'overdue'], [1, 'urgent'],
-    [day, 'urgent'], [day + 1, 'warning'], [3 * day, 'warning'],
-    [3 * day + 1, 'upcoming'], [7 * day, 'upcoming'], [7 * day + 1, 'normal']]) {
+    [hour - 1, 'urgent'], [hour, 'warning'], [hour + 1, 'warning'],
+    [24 * hour - 1, 'warning'], [24 * hour, 'normal'], [24 * hour + 1, 'normal'],
+    [3 * 24 * hour, 'normal'], [7 * 24 * hour, 'normal']]) {
     assert.equal(context.formatCountdown(now + left).status, status, `${left} ms remaining`);
   }
 });
