@@ -66,3 +66,48 @@ test('manifest loads localization first and has valid store locales', () => {
     assert.ok(messages.extensionDescription.description.length <= 112);
   }
 });
+
+function callbackOnlyStorage(saved, errorMethod) {
+  const data = { interfaceLanguage: saved };
+  const context = vm.createContext({ document: {}, chrome: {
+    i18n: { getUILanguage: () => 'zh-TW' }, runtime: {},
+    storage: { onChanged: { addListener() {} }, local: {
+      get(keys, callback) {
+        queueMicrotask(() => {
+          if (errorMethod === 'get') context.chrome.runtime.lastError = { message: 'Read denied' };
+          callback({ ...data });
+          delete context.chrome.runtime.lastError;
+        });
+      },
+      set(update, callback) {
+        queueMicrotask(() => {
+          if (errorMethod === 'set') context.chrome.runtime.lastError = { message: 'Write denied' };
+          else Object.assign(data, update);
+          callback();
+          delete context.chrome.runtime.lastError;
+        });
+      }
+    } }
+  }, queueMicrotask });
+  vm.runInContext(source, context);
+  return { i18n: context.E3HelperI18n, data };
+}
+test('Chrome 93 callback-only storage initializes and persists the language', async () => {
+  const { i18n, data } = callbackOnlyStorage('en');
+  await i18n.ready;
+  assert.equal(i18n.language, 'en');
+  assert.equal(i18n.text('新增作業'), 'Add assignment');
+  await i18n.save('zh-TW');
+  assert.equal(data.interfaceLanguage, 'zh-TW');
+  assert.equal(i18n.language, 'zh-TW');
+});
+test('preference read failure falls back while failed writes preserve the language', async () => {
+  const readFailure = callbackOnlyStorage('en', 'get');
+  await readFailure.i18n.ready;
+  assert.equal(readFailure.i18n.language, 'zh-TW');
+  const writeFailure = callbackOnlyStorage('en', 'set');
+  await writeFailure.i18n.ready;
+  await assert.rejects(writeFailure.i18n.save('zh-TW'), /Write denied/);
+  assert.equal(writeFailure.i18n.language, 'en');
+  assert.equal(writeFailure.data.interfaceLanguage, 'en');
+});

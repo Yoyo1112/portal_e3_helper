@@ -11,14 +11,15 @@
     native,
     async getPermissionLevel() {
       if (native) return (await request('notificationStatus')).permission;
-      return chrome.notifications ? chrome.notifications.getPermissionLevel() : 'denied';
+      return chrome.notifications ? E3NotificationAPI.permission() : 'denied';
     },
     async authorize() {
       return native ? (await request('authorizeNotifications')).permission : this.getPermissionLevel();
     },
     async create(id, options, url) {
+      if (!this.supported) throw new Error('Desktop notification service unavailable');
       if (native) return request('showNotification', { id, title: options.title, message: options.message, url: url || '' });
-      return chrome.notifications.create(id, options);
+      return E3NotificationAPI.create(id, options);
     }
   };
 })();

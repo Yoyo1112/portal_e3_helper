@@ -244,17 +244,6 @@ test('controlled midnight during cache writing discards yesterday completion', a
   assert.equal(app.container().style.display,'none');
   assert.equal(app.button().disabled,false);
 });
-test('full version keeps English cache separate from Chinese cache', async () => {
-  const storage=fixture(), english=load(storage);
-  english.context.E3HelperI18n.language='en';
-  await english.display(); await english.generate();
-  assert.equal(storedCache(storage).language,'en');
-  const chinese=load(storage); await chinese.display();
-  assert.equal(chinese.container().style.display,'none');
-  const reopened=load(storage); reopened.context.E3HelperI18n.language='en';
-  await reopened.display();
-  assert.match(reopened.container().innerHTML,/保留下來的重點/);
-});
 
 
 test('repeated source snapshots and days retain at most five digest entries', async () => {
@@ -498,3 +487,25 @@ for (const blockedStage of ['write', 'read']) {
     assert.match(writer.container().innerHTML, /successful write survives maintenance/);
   });
 }
+
+test('Chinese and English digest snapshots stay separate across fresh sessions', async () => {
+  const storage = fixture();
+  for (const language of ['zh-TW', 'en']) {
+    const app = load(storage);
+    app.context.E3HelperI18n.language = language;
+    await app.display();
+    assert.equal(app.container().style.display, 'none');
+    await app.generate();
+    assert.equal(app.container().style.display, 'block');
+  }
+  const keys = Object.keys(storage).filter(key => key.startsWith('dailyDigestCache:'));
+  assert.equal(keys.length, 2);
+  assert.deepEqual(new Set(keys.map(key => storage[key].language)), new Set(['zh-TW', 'en']));
+  for (const language of ['zh-TW', 'en']) {
+    const reopened = load(storage);
+    reopened.context.E3HelperI18n.language = language;
+    await reopened.display();
+    assert.equal(reopened.container().style.display, 'block');
+    assert.equal(reopened.calls(), 0);
+  }
+});

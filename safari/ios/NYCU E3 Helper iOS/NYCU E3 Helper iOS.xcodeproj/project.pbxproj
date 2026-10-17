@@ -41,7 +41,6 @@
 				<string>47360623306EC70900F0925A</string>
 				<string>47360620306EC70900F0925A</string>
 				<string>47360624306EC70900F0925A</string>
-				<string>E30300000000000000000001</string>
 				<string>4736061F306EC70900F0925A</string>
 				<string>47360628306EC70900F0925A</string>
 				<string>47360625306EC70900F0925A</string>
@@ -50,6 +49,9 @@
 				<string>47360626306EC70900F0925A</string>
 				<string>47360621306EC70900F0925A</string>
 				<string>E30200000000000000000005</string>
+				<string>E30300000000000000000001</string>
+				<string>E30600000000000000000001</string>
+				<string>E30700000000000000000001</string>
 			</array>
 		</dict>
 		<key>473605F9306EC70900F0925A</key>
@@ -164,12 +166,14 @@
 				<string>47360616306EC70900F0925A</string>
 				<string>47360617306EC70900F0925A</string>
 				<string>47360618306EC70900F0925A</string>
-				<string>E30300000000000000000002</string>
 				<string>47360619306EC70900F0925A</string>
 				<string>4736061A306EC70900F0925A</string>
 				<string>4736061B306EC70900F0925A</string>
 				<string>4736061C306EC70900F0925A</string>
 				<string>E30200000000000000000004</string>
+				<string>E30300000000000000000002</string>
+				<string>E30600000000000000000002</string>
+				<string>E30700000000000000000002</string>
 			</array>
 			<key>sourceTree</key>
 			<string>SOURCE_ROOT</string>
@@ -1285,25 +1289,65 @@
 			<key>fileRef</key>
 			<string>E30200000000000000000004</string>
 		</dict>
-		<key>E30300000000000000000002</key>
-		<dict>
-			<key>path</key>
-			<string>Resources/exam-detection.js</string>
-			<key>isa</key>
-			<string>PBXFileReference</string>
-			<key>name</key>
-			<string>exam-detection.js</string>
-			<key>lastKnownFileType</key>
-			<string>sourcecode.javascript</string>
-			<key>sourceTree</key>
-			<string>&lt;group&gt;</string>
-		</dict>
 		<key>E30300000000000000000001</key>
 		<dict>
 			<key>isa</key>
 			<string>PBXBuildFile</string>
 			<key>fileRef</key>
 			<string>E30300000000000000000002</string>
+		</dict>
+		<key>E30300000000000000000002</key>
+		<dict>
+			<key>isa</key>
+			<string>PBXFileReference</string>
+			<key>path</key>
+			<string>Resources/notification-api.js</string>
+			<key>name</key>
+			<string>notification-api.js</string>
+			<key>lastKnownFileType</key>
+			<string>sourcecode.javascript</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>E30600000000000000000002</key>
+		<dict>
+			<key>isa</key>
+			<string>PBXFileReference</string>
+			<key>lastKnownFileType</key>
+			<string>text</string>
+			<key>name</key>
+			<string>CHANGELOG.md</string>
+			<key>path</key>
+			<string>Resources/CHANGELOG.md</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>E30600000000000000000001</key>
+		<dict>
+			<key>isa</key>
+			<string>PBXBuildFile</string>
+			<key>fileRef</key>
+			<string>E30600000000000000000002</string>
+		</dict>
+		<key>E30700000000000000000002</key>
+		<dict>
+			<key>isa</key>
+			<string>PBXFileReference</string>
+			<key>lastKnownFileType</key>
+			<string>sourcecode.javascript</string>
+			<key>name</key>
+			<string>exam-detection.js</string>
+			<key>path</key>
+			<string>Resources/exam-detection.js</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>E30700000000000000000001</key>
+		<dict>
+			<key>isa</key>
+			<string>PBXBuildFile</string>
+			<key>fileRef</key>
+			<string>E30700000000000000000002</string>
 		</dict>
 	</dict>
 	<key>rootObject</key>

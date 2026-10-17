@@ -3,36 +3,59 @@ const assert = require('node:assert/strict');
 const vm = require('node:vm');
 const fs = require('node:fs');
 const source = fs.readFileSync(require('node:path').join(__dirname, '../notification-engine.js'), 'utf8');
-function load(seed = {}, now = new Date(2026, 9, 1, 10).getTime(), desktopSupported = true) {
+function load(seed = {}, now = new Date(2026, 9, 1, 10).getTime(), desktopSupported = true, callbackOnly = false) {
   const data = structuredClone(seed), desktop = [], requests = [];
-  let listener, failDesktop = false;
+  let listener, clicked, failDesktop = false;
+  const opened = [], cleared = [];
   class Clock extends Date { constructor(...args) { super(...(args.length ? args : [now])); } static now() { return now; } }
   const context = vm.createContext({ Date: Clock, URL, AbortSignal, console, E3HelperI18n: { ready: Promise.resolve(), text: s => s, template: (parts, ...values) => parts.reduce((out, part, i) => out + part + (i < values.length ? values[i] : ''), ''), language: 'en' },
     fetch: async (...args) => { requests.push(args); throw new Error('Unexpected network request'); },
     chrome: { runtime: { getURL: p => p },
       storage: { local: { get: async () => structuredClone(data), set: async value => Object.assign(data, structuredClone(value)) }, onChanged: { addListener: fn => { listener = fn; } } },
-      notifications: desktopSupported ? { create: async (...args) => { if (failDesktop) throw new Error('blocked'); desktop.push(args); }, onClicked: { addListener() {} } } : undefined } });
+      notifications: desktopSupported ? { create: async (...args) => { if (failDesktop) throw new Error('blocked'); desktop.push(args); }, clear: async id => { cleared.push(id); }, onClicked: { addListener(fn) { clicked = fn; } } } : undefined } });
+  context.chrome.tabs = { create: async options => opened.push(options.url) };
+  if (callbackOnly) {
+    for (const target of [context.chrome.storage.local, context.chrome.notifications, context.chrome.tabs]) {
+      if (!target) continue;
+      for (const [key, method] of Object.entries(target)) {
+        if (typeof method !== 'function') continue;
+        target[key] = (...args) => {
+          const callback = args.pop();
+          assert.equal(typeof callback, 'function');
+          Promise.resolve().then(() => method(...args)).then(callback, error => {
+            context.chrome.runtime.lastError = { message: error.message };
+            callback();
+            delete context.chrome.runtime.lastError;
+          });
+          return undefined;
+        };
+      }
+    }
+  }
+  vm.runInContext(fs.readFileSync(require('node:path').join(__dirname, '../notification-api.js'), 'utf8'), context);
   vm.runInContext(fs.readFileSync(require('node:path').join(__dirname, '../desktop-notifications.js'), 'utf8'), context);
   vm.runInContext(source, context);
-  return { engine: context.E3Notifications, data, desktop, requests, advance: ms => { now += ms; }, failDesktop: value => { failDesktop = value; }, listener };
+  return { engine: context.E3Notifications, data, desktop, requests, advance: ms => { now += ms; }, failDesktop: value => { failDesktop = value; }, listener, clicked, opened, cleared, context };
 }
 const options = { type: 'basic', title: 'Test', message: 'Content' };
 test('upgrading releases saved daily deadline reminders without accelerating retries', async () => {
   const now = new Date(2026, 9, 1, 10).getTime();
-  for (const attempts of [0, 1]) {
-    const deadline = now + 3600000;
-    const app = load({
-      assignments: [{ eventId: 'saved', name: 'Saved task', deadline }],
-      notificationSettings: { mode: 'daily', time: '20:00', reminders: [1] },
-      notificationQueue: [{ id: `deadline-saved-${deadline}-1`, options, deadline: { eventId: 'saved', timestamp: deadline, hours: 1 }, due: now + 120000, created: now - 60000, delivered: {}, attempts }]
-    }, now);
-    await app.engine.tick();
-    assert.equal(app.desktop.length, attempts === 0 ? 1 : 0);
-    if (attempts) {
-      assert.equal(app.data.notificationQueue[0].due, now + 120000);
-      app.advance(120000);
+  for (const callbackOnly of [false, true]) {
+    for (const attempts of [0, 1]) {
+      const deadline = now + 3600000;
+      const app = load({
+        assignments: [{ eventId: 'saved', name: 'Saved task', deadline }],
+        notificationSettings: { mode: 'daily', time: '20:00', reminders: [1] },
+        notificationQueue: [{ id: `deadline-saved-${deadline}-1`, options, deadline: { eventId: 'saved', timestamp: deadline, hours: 1 }, due: now + 120000, created: now - 60000, delivered: {}, attempts }]
+      }, now, true, callbackOnly);
       await app.engine.tick();
-      assert.equal(app.desktop.length, 1);
+      assert.equal(app.desktop.length, attempts === 0 ? 1 : 0);
+      if (attempts) {
+        assert.equal(app.data.notificationQueue[0].due, now + 120000);
+        app.advance(120000);
+        await app.engine.tick();
+        assert.equal(app.desktop.length, 1);
+      }
     }
   }
 });
@@ -117,6 +140,230 @@ test('Safari without notifications API never retries unsupported desktop deliver
   await app.engine.enqueue('unsupported', options);
   assert.equal(app.desktop.length, 0);
   assert.equal((app.data.notificationQueue || []).length, 0);
+});
+
+
+test('Chrome 93 callback delivery failures retry, persist and open trusted click links', async () => {
+  const app = load({ notificationSettings: { reminders: [] } }, Date.now(), true, true);
+  app.failDesktop(true);
+  await app.engine.enqueue('callback', options, 'https://e3p.nycu.edu.tw/source');
+  assert.equal(app.data.notificationQueue.length, 1);
+  assert.equal(app.data.notificationHistory.length, 0);
+  app.advance(120000);
+  app.failDesktop(false);
+  await app.engine.tick();
+  assert.equal(app.desktop.length, 1);
+  assert.equal(app.data.notificationQueue.length, 0);
+  assert.ok(app.data.notificationHistory.includes('callback'));
+  app.clicked('e3-alert-callback');
+  await new Promise(resolve => setImmediate(resolve));
+  assert.deepEqual(app.opened, ['https://e3p.nycu.edu.tw/source']);
+  assert.deepEqual(app.cleared, ['e3-alert-callback']);
+  app.data.notificationLinks['e3-alert-untrusted'] = 'https://example.com/';
+  app.clicked('e3-alert-untrusted');
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(app.opened.length, 1);
+  const restarted = load(app.data, Date.now(), true, true);
+  await restarted.engine.enqueue('callback', options);
+  assert.equal(restarted.desktop.length, 0);
+});
+
+
+function queued(id, due) {
+  return { id, options, url: 'https://e3p.nycu.edu.tw/source', created: due - 1, due, delivered: {}, attempts: 0 };
+}
+test('unrelated saves preserve overdue daily alerts and future retry times', async () => {
+  const now = new Date(2026, 9, 8, 10).getTime();
+  const settings = { desktop: true, updates: true, mode: 'daily', time: '09:00', reminders: [] };
+  const app = load({ notificationSettings: settings, notificationQueue: [queued('overdue', now - 3600000), queued('retry', now + 120000)] }, now);
+  app.data.notificationSettings = { ...settings, updates: false };
+  app.listener({ notificationSettings: { oldValue: settings, newValue: app.data.notificationSettings } }, 'local');
+  await app.engine.tick();
+  assert.equal(app.desktop.length, 1);
+  assert.equal(app.data.notificationQueue[0].due, now + 120000);
+});
+test('timing changes reschedule future alerts while preserving already-due work', async () => {
+  const now = new Date(2026, 9, 8, 10).getTime();
+  const settings = { desktop: true, mode: 'daily', time: '09:00', reminders: [] };
+  const app = load({ notificationSettings: settings, notificationQueue: [queued('overdue', now - 1), queued('future', now + 86400000)] }, now);
+  app.data.notificationSettings = { ...settings, time: '12:00' };
+  app.listener({ notificationSettings: { oldValue: settings, newValue: app.data.notificationSettings } }, 'local');
+  await app.engine.tick();
+  assert.equal(app.desktop.length, 1);
+  assert.equal(app.data.notificationQueue[0].due, now + 7200000);
+});
+test('queue capacity failures reject explicitly and retain the warning until space is available', async () => {
+  const now = new Date(2026, 9, 8, 10).getTime();
+  const app = load({ notificationSettings: { mode: 'daily', time: '20:00', reminders: [] }, notificationQueue: Array.from({ length: 200 }, (_, i) => queued(`queued-${i}`, now + 3600000)) }, now);
+  await assert.rejects(app.engine.enqueue('overflow', options), /通知佇列已滿/);
+  assert.ok(app.data.notificationDeliveryError);
+  await app.engine.tick();
+  assert.ok(app.data.notificationDeliveryError);
+  assert.equal(app.data.notificationQueue.length, 200);
+  app.advance(3600000);
+  await app.engine.tick();
+  assert.equal(app.data.notificationDeliveryError, '');
+  await app.engine.enqueue('overflow', options);
+  assert.ok(app.data.notificationQueue.some(item => item.id === 'overflow'));
+});
+test('a click on the first visible alert opens E3 while later delivery is pending', async () => {
+  const now = Date.now();
+  const app = load({ notificationSettings: { reminders: [] }, notificationQueue: [queued('first', now - 1), queued('second', now - 1)] }, now);
+  let release, started;
+  const blocked = new Promise(resolve => { release = resolve; });
+  const entered = new Promise(resolve => { started = resolve; });
+  app.context.chrome.notifications.create = async id => { if (id === 'e3-alert-second') { started(); await blocked; } };
+  const processing = app.engine.tick();
+  await entered;
+  try {
+    app.clicked('e3-alert-first');
+    await new Promise(resolve => setImmediate(resolve));
+    assert.deepEqual(app.opened, ['https://e3p.nycu.edu.tw/source']);
+    assert.deepEqual(app.cleared, ['e3-alert-first']);
+  } finally { release(); await processing; }
+});
+
+test('overflowed storage updates survive restart and enqueue when capacity returns', async () => {
+  const now = new Date(2026, 9, 8, 10).getTime();
+  const app = load({ notificationSettings: { mode: 'daily', time: '20:00', reminders: [] }, notificationQueue: Array.from({ length: 200 }, (_, i) => queued(`queued-${i}`, now + 3600000)) }, now);
+  app.data.messages = [{ id: 'new', title: 'Original subject', url: 'https://e3p.nycu.edu.tw/source' }];
+  app.listener({ messages: { oldValue: [], newValue: app.data.messages } }, 'local');
+  await app.engine.tick();
+  assert.deepEqual(app.data.notificationPendingUpdates, [{ source: 'messages', id: 'new' }]);
+  assert.ok(app.data.notificationDeliveryError);
+  const restarted = load(app.data, now + 3600000);
+  await restarted.engine.tick();
+  await restarted.engine.tick();
+  assert.equal(restarted.data.notificationPendingUpdates.length, 0);
+  assert.equal(restarted.data.notificationDeliveryError, '');
+  assert.ok(restarted.data.notificationQueue.some(item => item.id === 'messages-new'));
+});
+
+test('assignment and grading sidebar entries remain available when desktop queue is full', async () => {
+  const background = fs.readFileSync(require('node:path').join(__dirname, '../background.js'), 'utf8');
+  for (const name of ['sendAssignmentNotification', 'sendGradingNotification']) {
+    const start = background.indexOf(`async function ${name}(`);
+    const fn = background.slice(start, background.indexOf('\n}', start) + 2);
+    const app = load({ notificationSettings: { reminders: [] } });
+    app.context.console = { log() {}, warn() {}, error() {} };
+    app.context.uiText = s => s;
+    app.context.ui = (parts, ...values) => parts.reduce((result, part, index) => result + part + (values[index] ?? ''), '');
+    app.context.E3Notifications.enqueue = async () => { throw new Error('Queue full'); };
+    vm.runInContext(fn, app.context);
+    await app.context[name]({ eventId: 'new', name: 'Original assignment', course: 'Original course', deadline: Date.now() + 3600000, url: 'https://e3p.nycu.edu.tw/source' });
+    assert.equal(app.data.notifications?.length, 1, name);
+  }
+});
+
+test('waking with 30 minutes remaining sends only the current deadline threshold', async () => {
+  const now = new Date(2026, 9, 9, 10).getTime();
+  const app = load({ assignments: [{ eventId: 'a', name: 'Task', deadline: now + 1800000 }], notificationSettings: { reminders: [24, 1] } }, now);
+  await app.engine.tick();
+  assert.deepEqual(app.desktop.map(([id]) => id), [`e3-alert-deadline-a-${now + 1800000}-1`]);
+  await app.engine.tick();
+  const restarted = load(app.data, now);
+  await restarted.engine.tick();
+  assert.equal(app.desktop.length, 1);
+  assert.equal(restarted.desktop.length, 0);
+});
+
+test('a saved disable during link persistence prevents the pending visible alert', async () => {
+  const now = Date.now();
+  const settings = { desktop: true, reminders: [] };
+  const app = load({ notificationSettings: settings, notificationQueue: [queued('first', now - 1)] }, now);
+  let release, started;
+  const blocked = new Promise(resolve => { release = resolve; });
+  const entered = new Promise(resolve => { started = resolve; });
+  const set = app.context.chrome.storage.local.set;
+  app.context.chrome.storage.local.set = async value => {
+    await set(value);
+    if (value.notificationLinks && !value.notificationQueue) { started(); await blocked; }
+  };
+  const processing = app.engine.tick();
+  await entered;
+  try {
+    const disabled = { ...settings, desktop: false };
+    await app.context.E3NotificationAPI.set({ notificationSettings: disabled });
+    app.listener({ notificationSettings: { oldValue: settings, newValue: disabled } }, 'local');
+  } finally { release(); await processing; }
+  await app.engine.tick();
+  assert.equal(app.desktop.length, 0);
+  assert.equal(app.data.notificationQueue.length, 0);
+});
+
+test('normal threshold progression still sends the 24-hour and then the 1-hour reminder', async () => {
+  const now = Date.now();
+  const deadline = now + 25 * 3600000;
+  const app = load({ assignments: [{ eventId: 'a', name: 'Task', deadline }], notificationSettings: { reminders: [1, 24, 24] } }, now);
+  await app.engine.tick();
+  assert.equal(app.desktop.length, 0);
+  app.advance(3600000);
+  await app.engine.tick();
+  assert.deepEqual(app.desktop.map(([id]) => id), [`e3-alert-deadline-a-${deadline}-24`]);
+  app.advance(23 * 3600000);
+  await app.engine.tick();
+  assert.deepEqual(app.desktop.map(([id]) => id), [`e3-alert-deadline-a-${deadline}-24`, `e3-alert-deadline-a-${deadline}-1`]);
+});
+
+test('a queued or retrying historical deadline is superseded by the current threshold', async () => {
+  const now = Date.now();
+  const deadline = now + 1800000;
+  for (const attempts of [0, 2]) {
+    const old = { ...queued(`deadline-a-${deadline}-24`, now - 1), attempts, deadline: { eventId: 'a', timestamp: deadline, hours: 24 } };
+    const current = { ...queued(`deadline-a-${deadline}-1`, now - 1), deadline: { eventId: 'a', timestamp: deadline, hours: 1 } };
+    const app = load({ assignments: [{ eventId: 'a', name: 'Task', deadline }], notificationSettings: { mode: 'daily', reminders: [24, 1] }, notificationQueue: [old, current] }, now);
+    await app.engine.tick();
+    assert.deepEqual(app.desktop.map(([id]) => id), [`e3-alert-deadline-a-${deadline}-1`]);
+    assert.equal(app.data.notificationQueue.length, 0);
+  }
+});
+
+test('a disable saved during the first delivery prevents subsequent batch alerts on callback-only Chrome', async () => {
+  const now = Date.now();
+  const settings = { desktop: true, reminders: [] };
+  const app = load({ notificationSettings: settings, notificationQueue: [queued('first', now - 1), queued('second', now - 1)] }, now, true, true);
+  let release, started;
+  const blocked = new Promise(resolve => { release = resolve; });
+  const entered = new Promise(resolve => { started = resolve; });
+  const create = app.context.chrome.notifications.create;
+  app.context.chrome.notifications.create = (id, options, callback) => {
+    if (id === 'e3-alert-first') {
+      started();
+      blocked.then(() => create(id, options, callback));
+    } else create(id, options, callback);
+  };
+  const processing = app.engine.tick();
+  await entered;
+  try {
+    const disabled = { ...settings, desktop: false };
+    await app.context.E3NotificationAPI.set({ notificationSettings: disabled });
+    app.listener({ notificationSettings: { oldValue: settings, newValue: disabled } }, 'local');
+  } finally { release(); await processing; }
+  await app.engine.tick();
+  assert.deepEqual(app.desktop.map(([id]) => id), ['e3-alert-first']);
+  assert.equal(app.data.notificationQueue.length, 0);
+});
+
+test('delivery revalidates saved update and reminder preferences after link persistence', async () => {
+  const now = Date.now();
+  const deadline = now + 1800000;
+  for (const kind of ['updates', 'reminders']) {
+    const settings = { desktop: true, updates: true, reminders: [1] };
+    const item = kind === 'updates' ? queued('messages-new', now - 1) : {
+      ...queued(`deadline-a-${deadline}-1`, now - 1), deadline: { eventId: 'a', timestamp: deadline, hours: 1 }
+    };
+    const app = load({ notificationSettings: settings, assignments: [{ eventId: 'a', name: 'Task', deadline }], notificationQueue: [item] }, now);
+    const set = app.context.chrome.storage.local.set;
+    app.context.chrome.storage.local.set = async value => {
+      await set(value);
+      if (value.notificationLinks && !value.notificationQueue) {
+        await app.context.E3NotificationAPI.set({ notificationSettings: { ...settings, [kind]: kind === 'updates' ? false : [] } });
+      }
+    };
+    await app.engine.tick();
+    assert.equal(app.desktop.some(([id]) => id === `e3-alert-${item.id}`), false, kind);
+    assert.equal(app.data.notificationQueue.length, 0);
+  }
 });
 
 test('daily mode sends deadline reminders at once but holds other events', async () => {
@@ -204,4 +451,24 @@ test('notification log keeps the latest 50 deliveries with their links', async (
   assert.equal(app.data.notificationLog.at(-1).title, 'T54');
   assert.equal(app.data.notificationLog.at(-1).category, 'assignment');
   assert.equal(app.data.notificationLog.at(-1).url, 'https://e3p.nycu.edu.tw/a');
+});
+test('an event disabled during link persistence is dropped from the daily summary', async () => {
+  const now = Date.now();
+  const settings = { desktop: true, mode: 'daily', time: '20:00', reminders: [] };
+  const app = load({ notificationSettings: settings, notificationQueue: [queued('announcements-1', now - 1), queued('announcements-2', now - 1), queued('grading-3', now - 1)] }, now, true, true);
+  const set = app.context.chrome.storage.local.set;
+  let saved = false;
+  app.context.chrome.storage.local.set = (value, callback) => {
+    set(value, () => {
+      if (!saved && value.notificationLinks && !value.notificationQueue) {
+        saved = true;
+        app.data.notificationSettings = { ...settings, events: { announcement: false } };
+      }
+      callback();
+    });
+  };
+  await app.engine.tick();
+  assert.deepEqual(app.desktop.map(([id]) => id), ['e3-alert-grading-3']);
+  assert.equal(app.data.notificationQueue.length, 0);
+  assert.equal(app.data.notificationLinks['e3-alert-grading-3'], 'https://e3p.nycu.edu.tw/source');
 });

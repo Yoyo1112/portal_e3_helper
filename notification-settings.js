@@ -1,7 +1,7 @@
 (async function () {
   await E3HelperI18n.ready;
   // Same appearance setting as the sidebar: light unless dark or follow-the-system is saved.
-  const { themePreference } = await chrome.storage.local.get(['themePreference']);
+  const { themePreference } = await E3NotificationAPI.get(['themePreference']);
   if (themePreference === 'system' || themePreference === 'dark') document.documentElement.dataset.theme = themePreference;
   const t = E3HelperI18n.text;
   const english = E3HelperI18n.language === 'en';
@@ -45,7 +45,7 @@
     </form>
     <section class="card history"><div class="section-heading"><h2>最近通知</h2><p>最近送出的 50 則桌面通知。</p></div><ol id="history-list" class="history-list"></ol><p id="history-empty" class="hint" hidden>尚無通知紀錄</p></section>
     <p class="footnote">瀏覽器需保持開啟；電腦休眠可能延後通知。新資料依 E3 同步週期更新。</p>`;
-  const data = await chrome.storage.local.get(['notificationSettings', 'notificationDeliveryError', 'notificationLog']);
+  const data = await E3NotificationAPI.get(['notificationSettings', 'notificationDeliveryError', 'notificationLog']);
   const saved = data.notificationSettings || {};
   const settings = { desktop: true, mode: 'instant', time: '20:00', reminders: [24, 1], ...saved };
   // Older settings had one switch (`updates`) for both announcements and messages.
@@ -178,7 +178,7 @@
       if (notificationSettings.desktop && E3DesktopNotifications.native && await E3DesktopNotifications.authorize() !== 'granted') {
         throw new Error(t('請在瀏覽器與系統設定允許通知。'));
       }
-      await chrome.storage.local.set({ notificationSettings });
+      await E3NotificationAPI.set({ notificationSettings });
       dirty = revision !== savedRevision;
       status.textContent = t(dirty ? '尚未儲存' : '設定已儲存！'); status.dataset.state = dirty ? 'pending' : 'success';
     } catch (error) { status.textContent = error.message || t('儲存失敗，請再試一次。'); status.dataset.state = 'error'; save.disabled = false; }

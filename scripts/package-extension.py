@@ -21,7 +21,7 @@ def extension_files():
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     # CHANGELOG.md is fetched at runtime for the What's New dialog.
-    return ['manifest.json', 'CHANGELOG.md', *module.FILES]
+    return list(dict.fromkeys(['manifest.json', 'CHANGELOG.md', *module.FILES]))
 
 def expand(names):
     paths = []

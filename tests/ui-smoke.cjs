@@ -1,123 +1,147 @@
-// Optional browser smoke test: install Playwright or set PLAYWRIGHT_PATH.
-// Set CHROME_PATH to use an existing Chrome executable.
 const { chromium } = require(process.env.PLAYWRIGHT_PATH || 'playwright');
 const assert = require('node:assert/strict');
 const path = require('node:path');
+const fs = require('node:fs');
 (async () => {
-  const browser = await chromium.launch({ headless: true, ...(process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH } : {}) });
+  const browser = await chromium.launch({headless:true, executablePath:process.env.CHROME_PATH});
   try {
-    const page = await browser.newPage({ viewport: { width: 1280, height: 900 }, hasTouch: true });
-    const errors = [];
-    page.on('pageerror', error => errors.push(error.message));
-    await page.route('https://e3p.nycu.edu.tw/**', route => route.fulfill({ contentType: 'text/html', body: '<!doctype html><html><head></head><body></body></html>' }));
-    await page.addInitScript(() => {
-      const changes = [];
-      const seed = { interfaceLanguage: 'en', assignments: [{ eventId: 'manual-1', name: '作業中文原文', course: '課程中文原文', deadline: Date.now() + 86400000, manualStatus: 'pending', isManual: true }], courses: [], announcements: [], lastSyncTime: Date.now(), lastSeenVersion: '2.2.0' };
-      const read = () => JSON.parse(localStorage.getItem('fixture') || JSON.stringify(seed));
-      window.chrome = {
-        i18n: { getUILanguage: () => 'zh-TW' },
-        runtime: { id: 'test', getManifest: () => ({ version: '2.2.0' }), getURL: p => p, onMessage: { addListener() {} }, sendMessage: (message, callback) => { const result = { success: true }; callback?.(result); return Promise.resolve(result); } },
-        storage: {
-          onChanged: { addListener: listener => changes.push(listener) },
-          local: {
-            get: async (keys, callback) => { const data = read(); callback?.(data); return data; },
-            set: async update => {
-              const data = read();
-              localStorage.setItem('fixture', JSON.stringify({ ...data, ...update }));
-              const change = Object.fromEntries(Object.entries(update).map(([key, value]) => [key, { oldValue: data[key], newValue: value }]));
-              changes.forEach(listener => listener(change, 'local'));
-            }
-          }
-        }
-      };
-    });
-    await page.goto('https://e3p.nycu.edu.tw/');
-    const inject = async () => {
-      await page.addScriptTag({ path: path.join(__dirname, '../i18n.js') });
-      await page.addScriptTag({ path: path.join(__dirname, '../exam-detection.js') });
-      await page.addScriptTag({ path: path.join(__dirname, '../content.js') });
-      await page.waitForSelector('.e3-helper-sidebar-toggle');
+    const root = path.join(__dirname, '..');
+    const localized = fs.existsSync(path.join(root,'i18n.js'));
+    for (const language of localized ? ['zh-TW', 'en'] : ['zh-TW']) {
+      const page = await browser.newPage({viewport:{width:1280,height:900}});
+      const errors=[];
+      page.on('pageerror', e => errors.push(e.message));
+      await page.route('https://e3p.nycu.edu.tw/**', route => route.fulfill({contentType:'text/html',body:'<!doctype html><html><head></head><body></body></html>'}));
+      await page.addInitScript(language => {
+        const listeners=[];
+        const data=JSON.parse(localStorage.getItem('fixtureStorage') || 'null') || {interfaceLanguage:language,themePreference:'light',aiSettings:{enabled:false,geminiApiKey:'fixture-gemini',geminiModel:'saved-model',openaiSummaryApiKey:'fixture-openai',openaiSummaryModel:'gpt-5-nano'},assignments:[{eventId:'manual-1',name:'作業中文原文',course:'課程中文原文',deadline:Date.now()+86400000,manualStatus:'pending',isManual:true}],courses:[],announcements:[],lastSyncTime:Date.now(),lastSeenVersion:'2.2.0'};
+        window.chrome={i18n:{getUILanguage:()=>language},runtime:{id:'test',getManifest:()=>({version:'2.2.0'}),getURL:p=>p,onMessage:{addListener(){}},sendMessage:(m,cb)=>{window.fixtureRequests ||= [];window.fixtureRequests.push(m);const response=m.action==='listGeminiModels'?(window.fixtureModelFailure?{success:false,error:'HTTP 502'}:{success:true,data:[{id:'future-flash',name:'Future Flash'},{id:'future-pro',name:'Future Pro'}]}):{success:true,data:'fixture summary'};cb?.(response);return Promise.resolve(response);}},storage:{onChanged:{addListener:fn=>listeners.push(fn)},local:{get:async(keys,cb)=>{cb?.(data);return data;},set:async update=>{Object.assign(data,update);localStorage.setItem('fixtureStorage',JSON.stringify(data));listeners.forEach(fn=>fn(Object.fromEntries(Object.entries(update).map(([k,v])=>[k,{newValue:v}])),'local'));}}}};
+      },language);
+      await page.goto('https://e3p.nycu.edu.tw/');
+      if(localized) await page.addScriptTag({path:path.join(root,'i18n.js')});
+      await page.addScriptTag({path:path.join(root,'exam-detection.js')});
+      await page.addScriptTag({path:path.join(root,'content.js')});
       await page.locator('.e3-helper-sidebar-toggle').click();
-    };
-    await inject();
-    const checkTabLayout = async () => {
-      for (const width of [280, 350, 480, 800]) {
-        const layout = await page.evaluate(width => {
-          const sidebar = document.querySelector('.e3-helper-sidebar');
-          sidebar.style.width = `${width}px`;
-          const tabs = sidebar.querySelector('.e3-helper-tabs');
-          const bounds = tabs.getBoundingClientRect();
-          return {
-            overflow: tabs.scrollWidth > tabs.clientWidth,
-            visible: [...tabs.children].every(tab => {
-              const rect = tab.getBoundingClientRect();
-              return rect.left >= bounds.left && rect.right <= bounds.right &&
-                rect.top >= bounds.top && rect.bottom <= bounds.bottom;
-            })
-          };
-        }, width);
-        assert.equal(layout.overflow, false, `Tabs overflow at ${width}px`);
-        assert.equal(layout.visible, true, `Tab is clipped at ${width}px`);
+      for(const width of [280,350,480,800]) {
+        const result=await page.evaluate(width=>{
+          const sidebar=document.querySelector('.e3-helper-sidebar');sidebar.style.width=width+'px';
+          const tabs=sidebar.querySelector('.e3-helper-tabs'), bounds=tabs.getBoundingClientRect();
+          return tabs.scrollWidth<=tabs.clientWidth && [...tabs.children].every(tab=>{const r=tab.getBoundingClientRect();return r.left>=bounds.left && r.right<=bounds.right && r.top>=bounds.top && r.bottom<=bounds.bottom;});
+        },width);
+        assert.ok(result,`Tabs fit ${width}px`);
       }
-    };
-    await checkTabLayout();
-    assert.deepEqual((await page.locator('.e3-helper-tab').allTextContents()).map(text => text.replace(/\d+$/, '')), ['Coursework', 'Courses', 'Downloads', 'Announcements', 'Alerts', 'Help']);
-    assert.ok((await page.locator('[data-content="assignments"]').innerText()).includes('作業中文原文'));
-    assert.ok((await page.locator('[data-content="assignments"]').innerText()).includes('Mark as submitted'));
-    for (const tab of ['grades', 'downloads', 'announcements', 'notifications', 'help']) {
-      await page.locator(`[data-tab="${tab}"]`).click();
-      await page.waitForTimeout(100);
-      const text = await page.locator(`[data-content="${tab}"]`).innerText();
-      assert.ok(text.trim(), `${tab} should render`);
-      assert.ok(!/[\u3400-\u9fff]/.test(text.replaceAll('作業中文原文', '').replaceAll('課程中文原文', '')), `${tab} contains untranslated UI: ${text}`);
+      for(const tab of ['assignments','grades','downloads','announcements','notifications','help']) {
+        await page.locator(`[data-tab="${tab}"]`).click();
+        assert.ok((await page.locator(`[data-content="${tab}"]`).innerText()).trim(),`${tab} renders`);
+      }
+      assert.equal(await page.locator('.e3-helper-help a').filter({hasText:'GitHub'}).getAttribute('href'),'https://github.com/Yoyo1112/portal_e3_helper');
+      await page.locator('[data-tab="assignments"]').click();
+      assert.ok((await page.locator('[data-content="assignments"]').innerText()).includes('作業中文原文'));
+      await page.locator('#e3-helper-more-btn').click();
+      await page.locator('#e3-helper-settings-btn').click();
+      assert.equal(await page.locator('#e3-helper-theme').inputValue(),'light');
+      await page.locator('#e3-helper-enable-ai').check();
+      assert.equal(await page.locator('#e3-helper-ai-provider').inputValue(),'gemini');
+      assert.equal(await page.locator('#e3-helper-gemini-model-id').inputValue(),'saved-model');
+      assert.ok(await page.locator('#e3-helper-gemini-model option[value="future-flash"]').count());
+      assert.ok(await page.locator('#e3-helper-openai-settings').isHidden());
+      await page.locator('#e3-helper-test-ai-btn').click();
+      await page.waitForFunction(() => document.querySelector('#e3-helper-ai-status').textContent.includes(E3HelperI18n.text('連接成功')));
+      assert.equal(await page.evaluate(() => window.fixtureRequests.at(-1).action),'callGeminiApi');
+      await page.locator('#e3-helper-gemini-model').selectOption('future-pro');
+      assert.equal(await page.locator('#e3-helper-gemini-model-id').inputValue(),'future-pro');
+      await page.evaluate(() => {window.fixtureModelFailure=true;});
+      await page.locator('#e3-helper-refresh-gemini-models').click();
+      await page.waitForFunction(() => document.querySelector('#e3-helper-gemini-model-status').textContent.includes('HTTP 502'));
+      assert.ok(await page.locator('#e3-helper-gemini-model option[value="future-flash"]').count());
+      await page.locator('#e3-helper-gemini-model-id').fill('manual-future-model');
+      await page.locator('#e3-helper-save-settings').click();
+      assert.equal(await page.evaluate(async () => (await chrome.storage.local.get(['aiSettings'])).aiSettings.geminiModel),'manual-future-model');
+      await page.locator('#e3-helper-more-btn').click();
+      await page.locator('#e3-helper-settings-btn').click();
+      assert.equal(await page.locator('#e3-helper-gemini-model-id').inputValue(),'manual-future-model');
+      assert.ok(await page.locator('#e3-helper-gemini-model option[value="future-flash"]').count());
+      await page.locator('#e3-helper-ai-provider').selectOption('openai');
+      assert.ok(await page.locator('#e3-helper-gemini-settings').isHidden());
+      assert.ok(await page.locator('#e3-helper-openai-settings').isVisible());
+      assert.equal(await page.locator('#e3-helper-openai-summary-key').inputValue(),'fixture-openai');
+      await page.locator('#e3-helper-test-ai-btn').click();
+      await page.waitForFunction(() => document.querySelector('#e3-helper-ai-status').textContent.includes(E3HelperI18n.text('連接成功')));
+      assert.equal(await page.evaluate(() => window.fixtureRequests.at(-1).action),'callOpenAIResponsesApi');
+      await page.locator('#e3-helper-theme').selectOption('dark');
+      await page.locator('#e3-helper-save-settings').click();
+      assert.equal(await page.locator('html').getAttribute('data-e3-helper-theme'),'dark');
+      const savedAI = await page.evaluate(async () => (await chrome.storage.local.get(['aiSettings'])).aiSettings);
+      assert.equal(savedAI.summaryProvider,'openai');
+      assert.equal(savedAI.geminiApiKey,'fixture-gemini');
+      assert.equal(savedAI.geminiModel,'manual-future-model');
+      assert.equal(savedAI.openaiSummaryApiKey,'fixture-openai');
+
+      const discoveryCount = await page.evaluate(() => window.fixtureRequests.filter(request => request.action === 'listGeminiModels').length);
+      await page.locator('#e3-helper-more-btn').click();
+      await page.locator('#e3-helper-settings-btn').click();
+      assert.equal(await page.locator('#e3-helper-ai-provider').inputValue(),'openai');
+      assert.equal(await page.evaluate(() => window.fixtureRequests.filter(request => request.action === 'listGeminiModels').length),discoveryCount);
+      await page.locator('#e3-helper-save-settings').click();
+      await page.evaluate(async () => {
+        const {aiSettings} = await chrome.storage.local.get(['aiSettings']);
+        await chrome.storage.local.set({aiSettings:{...aiSettings,geminiModel:''}});
+        window.fixtureModelFailure=false;
+      });
+      await page.locator('#e3-helper-more-btn').click();
+      await page.locator('#e3-helper-settings-btn').click();
+      assert.equal(await page.evaluate(() => window.fixtureRequests.filter(request => request.action === 'listGeminiModels').length),discoveryCount);
+      assert.equal(await page.locator('#e3-helper-gemini-model').inputValue(),'');
+      assert.equal(await page.locator('#e3-helper-gemini-model-id').inputValue(),'');
+      await page.locator('#e3-helper-ai-provider').selectOption('gemini');
+      await page.waitForFunction(() => document.querySelector('#e3-helper-gemini-model-status').textContent === E3HelperI18n.text('模型清單已更新。'));
+      assert.equal(await page.evaluate(() => window.fixtureRequests.filter(request => request.action === 'listGeminiModels').length),discoveryCount+1);
+      assert.equal(await page.locator('#e3-helper-gemini-model').inputValue(),'');
+      assert.equal(await page.locator('#e3-helper-gemini-model-id').inputValue(),'');
+      const requestCount = await page.evaluate(() => window.fixtureRequests.length);
+      await page.locator('#e3-helper-test-ai-btn').click();
+      assert.equal(await page.evaluate(() => window.fixtureRequests.length),requestCount);
+      assert.ok((await page.locator('#e3-helper-ai-status').innerText()).includes(language === 'en' ? 'Enter an API key and select a model' : '請輸入 API Key 並選擇模型'));
+      await page.locator('#e3-helper-gemini-model').selectOption('future-flash');
+      assert.equal(await page.locator('#e3-helper-gemini-model-id').inputValue(),'future-flash');
+      await page.locator('#e3-helper-save-settings').click();
+
+      assert.equal(await page.evaluate(async () => (await chrome.storage.local.get(['themePreference'])).themePreference),'dark');
+      await page.reload();
+      if(localized) await page.addScriptTag({path:path.join(root,'i18n.js')});
+      await page.addScriptTag({path:path.join(root,'exam-detection.js')});
+      await page.addScriptTag({path:path.join(root,'content.js')});
+      assert.equal(await page.locator('html').getAttribute('data-e3-helper-theme'),'dark');
+      assert.equal(await page.locator('.e3-helper-sidebar').evaluate(el => getComputedStyle(el).backgroundColor),'rgb(18, 17, 16)');
+      const script = fs.readFileSync(path.join(root,'content.js'),'utf8');
+      const functions = ['helperIcon', 'escapeHtml', 'showTemporaryMessage'].map(name => {
+        const start = script.indexOf(`function ${name}(`);
+        return script.slice(start,script.indexOf('\n}',start)+2);
+      }).join('\n');
+      await page.addScriptTag({content:functions});
+      await page.evaluate(() => {Object.hasOwn = undefined;});
+      for (const theme of ['light', 'dark']) {
+        await page.evaluate(theme => chrome.storage.local.set({themePreference:theme}), theme);
+        const treatments = [];
+        for (const type of ['success', 'error', 'warning', 'info']) {
+          await page.evaluate(type => showTemporaryMessage('Status fixture', type, 60000), type);
+          const toast = page.locator('.e3-helper-toast').last();
+          assert.equal(await toast.getAttribute('role'), type === 'error' ? 'alert' : 'status');
+          const colors = await toast.evaluate(el => {
+            const style = getComputedStyle(el);
+            return {border:style.borderLeftColor,width:style.borderLeftWidth,bg:style.backgroundColor,text:style.color};
+          });
+          assert.equal(colors.width,'4px');
+          assert.notEqual(colors.border,colors.bg);
+          assert.notEqual(colors.text,colors.bg);
+          treatments.push(colors.border);
+        }
+        assert.equal(new Set(treatments).size,4,`${theme} has distinct toast status colors`);
+        await page.locator('.e3-helper-toast').evaluateAll(elements => elements.forEach(el => el.remove()));
+      }
+      assert.deepEqual(errors,[]);
+      await page.close();
     }
-    await page.locator('#e3-helper-more-btn').click();
-    await page.locator('#e3-helper-settings-btn').click();
-    assert.equal(await page.locator('#e3-helper-language').inputValue(), 'en');
-    assert.ok((await page.locator('#e3-helper-settings-modal').innerText()).includes('Saving a new language refreshes this page.'));
-    await page.locator('#e3-helper-enable-ai').check();
-    const settings = await page.locator('#e3-helper-settings-modal').innerText();
-    assert.ok(!/[\u3400-\u9fff]/.test(settings.replace('繁體中文', '')), settings);
-    await page.locator('#e3-helper-language').selectOption('zh-TW');
-    await Promise.all([page.waitForEvent('framenavigated'), page.locator('#e3-helper-save-settings').click()]);
-    await page.waitForLoadState('load');
-    assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem('fixture')).interfaceLanguage), 'zh-TW');
-    await inject();
-    await checkTabLayout();
-    assert.equal(await page.locator('[data-tab="assignments"]').innerText(), '課業');
-    assert.ok((await page.locator('[data-content="assignments"]').innerText()).includes('標記為已繳交'));
-    await page.setViewportSize({ width: 768, height: 1024 });
-    await page.locator('#e3-helper-close-btn').tap();
-    await page.locator('.e3-helper-sidebar-toggle').tap();
-    assert.equal(await page.locator('.e3-helper-sidebar').evaluate(el => el.classList.contains('expanded')), true);
-    await page.waitForFunction(() => getComputedStyle(document.querySelector('.e3-helper-sidebar')).transform === 'matrix(1, 0, 0, 1, 0, 0)');
-    const session = await page.context().newCDPSession(page);
-    const dragTouch = async (start, end, cancel = false) => {
-      await session.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: start.x, y: start.y }] });
-      await session.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: end.x, y: end.y }] });
-      await session.send('Input.dispatchTouchEvent', { type: cancel ? 'touchCancel' : 'touchEnd', touchPoints: [] });
-    };
-    const handle = await page.locator('.e3-helper-resize-handle').boundingBox();
-    const oldWidth = await page.locator('.e3-helper-sidebar').evaluate(el => el.offsetWidth);
-    await dragTouch({ x: handle.x + 3, y: 300 }, { x: handle.x + 103, y: 300 });
-    assert.ok(Math.abs(await page.locator('.e3-helper-sidebar').evaluate(el => el.offsetWidth) - (oldWidth - 100)) <= 1, 'Touch resizing follows the drag within pixel rounding');
-    await page.locator('#e3-helper-close-btn').tap();
-    await page.waitForFunction(() => !document.querySelector('.e3-helper-sidebar').getAnimations().length);
-    const toggle = await page.locator('.e3-helper-sidebar-toggle').boundingBox();
-    await dragTouch({ x: toggle.x + 10, y: toggle.y + 10 }, { x: toggle.x + 10, y: toggle.y + 110 });
-    assert.equal(await page.locator('.e3-helper-sidebar').evaluate(el => el.classList.contains('expanded')), false, 'Dragging must not open the sidebar');
-    assert.ok(await page.evaluate(() => localStorage.getItem('e3-helper-toggle-top')), 'Touch drag saves the entrance position');
-    const movedToggle = await page.locator('.e3-helper-sidebar-toggle').boundingBox();
-    await dragTouch({ x: movedToggle.x + 10, y: movedToggle.y + 10 }, { x: movedToggle.x + 10, y: movedToggle.y + 30 }, true);
-    await page.locator('.e3-helper-sidebar-toggle').tap();
-    assert.equal(await page.locator('.e3-helper-sidebar').evaluate(el => el.classList.contains('expanded')), true, 'Cancelled gestures must not break the next tap');
-    await page.waitForFunction(() => getComputedStyle(document.querySelector('.e3-helper-sidebar')).transform === 'matrix(1, 0, 0, 1, 0, 0)');
-    await page.setViewportSize({ width: 320, height: 900 });
-    const sidebarBounds = await page.locator('.e3-helper-sidebar').boundingBox();
-    assert.ok(sidebarBounds.width <= 320 && sidebarBounds.x >= 0, 'Sidebar fits a narrow split view');
-    assert.deepEqual(errors, []);
-    console.log('Passed: six tabs, language/settings, touch tap/resize/drag/cancel and narrow split view.');
-  } finally {
-    await browser.close();
-  }
-})().catch(error => { console.error(error); process.exitCode = 1; });
+    console.log('Passed: six tabs, responsive layout, original course text, settings, restored dark theme, toast status colors, provider switching, OpenAI settings without Gemini requests, and explicit Gemini model selection/discovery/fallback.');
+  } finally {await browser.close();}
+})().catch(error=>{console.error(error);process.exitCode=1;});

@@ -2,35 +2,52 @@
 (function () {
   'use strict';
   const english = {
+  "倒數顏色：一天內紅色、超過一天至三天琥珀色、超過三天至七天藍色、超過七天綠色；已截止則顯示灰色。": "Countdown colors: red within one day, amber within three days, blue within seven days, green beyond seven days, and gray after the deadline.",
+  "請逐一點擊下方連結，Safari 會下載檔案或開啟預覽。": "Click each link below. Safari will download the file or open a preview.",
+  "下載連結已備妥，請逐一點擊。": "Download links are ready. Click each one.",
+  "無法下載": "Download unavailable",
   "時間未知": "Unknown time",
+  "AI 請求逾時，請重試": "AI request timed out. Please retry.",
+  "OpenAI 串流中斷，請重試": "OpenAI stream interrupted. Please retry.",
+  "Gemini 串流中斷，請重試": "Gemini stream interrupted. Please retry.",
   "AI 摘要與今日總覽": "AI summaries and daily digest",
   "選擇 Gemini 或 OpenAI 生成公告與信件摘要與今日總覽；翻譯則使用 Google Translate 免費服務。": "Choose Gemini or OpenAI for summaries and daily digests. Translation uses Google Translate.",
   "摘要與今日總覽供應商": "Summary and daily digest provider",
   "Gemini API Key": "Gemini API key",
-  "可用 Gemini 模型": "Available Gemini models",
-  "重新載入模型": "Refresh models",
-  "模型 ID（可手動輸入）": "Model ID (manual entry supported)",
   "建立 API Key。模型清單會從 Gemini API 載入；連線失敗時可使用上次清單或手動輸入模型 ID。": "Create an API key. Models are loaded from Gemini; use the cached list or a manual model ID if discovery fails.",
   "測試連接": "Test connection",
   "小型模型": "Small models",
   "其他模型": "Other models",
-  "可用模型與費用依供應商帳戶而定。": "Model availability and pricing depend on your provider account.",
-  "（已儲存／手動）": " (saved / manual)",
-  "正在載入可用模型…": "Loading available models…",
-  "模型清單已更新。": "Model list updated.",
-  "請選擇模型或手動輸入模型 ID": "Choose a model or enter its ID",
-  "來源資料已變更，請重新產生總覽": "Source data changed. Generate the overview again.",
-  "來源資料或日期已變更，請重新產生總覽": "Source data or date changed. Generate the overview again.",
-  "總覽格式不符或沒有有效來源": "Invalid overview format or no valid sources",
-  "輸入 API Key 後載入模型，或手動輸入模型 ID。": "Enter an API key to load models, or enter a model ID manually.",
-  "。可使用上次清單或手動輸入模型 ID。": ". Use the cached list or enter a model ID manually.",
-  "請輸入 API Key 並選擇模型": "Enter an API key and choose a model",
-  "請設定所選 AI 供應商的 API Key 與模型": "Set the selected AI provider's API key and model",
-  "AI API 請求失敗": "AI API request failed",
-  "請先在設定中啟用 AI 摘要並設定所選供應商的 API Key 與模型": "Enable AI summaries and set the selected provider's key and model in Settings first",
-  "OpenAI API 返回無效結果": "Invalid OpenAI API response",
-  "Gemini API 返回無效結果": "Invalid Gemini API response",
   "在 <a href=\"https://aistudio.google.com/apikey\"": "In <a href=\"https://aistudio.google.com/apikey\"",
+  "開啟「更多 → 設定」，勾選「啟用 AI 摘要」，選擇 Gemini 或 OpenAI、填入對應 API Key 與摘要模型，再儲存設定。": "Open More → Settings, enable AI summaries, choose Gemini or OpenAI, enter its API key and model, then save.",
+  "內容頁的「中→英、英→中」使用 Google Translate，不需要 AI API Key；「顯示原文」可還原內容。": "Chinese → English and English → Chinese use Google Translate without an AI API key. Show original restores the source content.",
+  "「AI摘要」整理單篇內容，需要先啟用 AI 摘要並設定所選供應商的 API Key。": "AI summary summarizes an individual item. Enable AI summaries and set the selected provider's API key first.",
+  "課程資料、閱讀狀態及設定儲存在瀏覽器本地。使用翻譯時，待翻譯內容會傳送至 Google Translate；使用單篇摘要時，內文會傳送至所選的 Gemini 或 OpenAI；今日總覽則傳送今天項目的標題、課程、寄件者與時間。API Key 儲存在本地設定中。": "Course data, read status, settings and keys are stored locally. Translation sends content to Google Translate. Summaries and daily digests send source content to the selected Gemini or OpenAI provider.",
+  "摘要供應商": "Summary provider",
+  "可用 Gemini 模型": "Available Gemini models",
+  "重新載入模型": "Reload models",
+  "模型 ID（可手動輸入）": "Model ID (manual entry supported)",
+  "在 ": "At ",
+  " 建立 API Key。模型清單會從 Gemini API 載入；連線失敗時可使用上次清單或手動輸入模型 ID。": " create an API key. Models are loaded from the Gemini API; if loading fails, use the previous list or enter a model ID manually.",
+  "可用模型與費用依供應商帳戶而定。": "Available models and costs depend on your provider account.",
+  "• AI 摘要：使用 Gemini 或 OpenAI 自動摘要長篇公告和信件": "• AI summaries: summarize long announcements and messages with Gemini or OpenAI",
+  "• 摘要需要所選供應商的有效 API Key": "• Summaries need a valid API key for the selected provider",
+  "請選擇模型或手動輸入模型 ID": "Select a model or enter a model ID manually",
+  "（已儲存／手動）": " (saved / manual)",
+  "輸入 API Key 後載入模型，或手動輸入模型 ID。": "Enter an API key to load models, or enter a model ID manually.",
+  "正在載入可用模型…": "Loading available models…",
+  "無可用模型": "No available models",
+  "模型清單已更新。": "Model list updated.",
+  "載入失敗：": "Loading failed: ",
+  "。可使用上次清單或手動輸入模型 ID。": ". Use the previous list or enter a model ID manually.",
+  "請輸入 API Key 並選擇模型": "Enter an API key and select a model",
+  "請先在設定中啟用 AI 摘要並設定所選供應商的 API Key 與模型": "Enable AI summaries in Settings and configure the selected provider’s API key and model first",
+  "請設定所選 AI 供應商的 API Key 與模型": "Configure the selected AI provider’s API key and model",
+  "來源資料已變更，請重新產生總覽": "Source data changed. Generate the digest again.",
+  "來源資料或日期已變更，請重新產生總覽": "Source data or date changed. Generate the digest again.",
+  "總覽沒有有效來源": "The digest has no valid sources",
+  "總覽格式不符或沒有有效來源": "The digest format is invalid or has no valid sources",
+  "AI API 請求失敗": "AI API request failed",
   "設定通知與提醒時間": "Configure notifications and reminders",
   "選擇你需要的提醒，讓課程資訊在適合的時間出現。": "Choose the reminders you need, at a time that works for you.",
   "桌面通知": "Desktop notifications",
@@ -159,7 +176,7 @@
   "今日總覽": "Today's digest",
   "在「公告」分頁最上方點「產生總覽」，一次整理今天公告與信件的重點，並從重點連結開啟原文。": "Click Generate digest at the top of Announcements to summarize today's announcements and messages. Click a highlight to open its source.",
   "先在公告分頁載入資料，或點「重新載入」更新公告與信件。": "Load announcements and messages first, or click Reload to refresh them.",
-  "開啟「更多 → 設定」，勾選「啟用 AI 摘要」，選擇 Gemini 或 OpenAI、填入對應 API Key 與摘要模型，再儲存設定。": "Open More → Settings, enable AI summaries, choose Gemini or OpenAI, enter its API key and model, then save.",
+  "開啟「更多 → 設定」，勾選「啟用 AI 摘要」，填入 OpenAI API Key、選擇摘要模型，再儲存設定。": "Open More → Settings, enable AI summaries, enter your OpenAI API key, choose a model and save.",
   "回到公告分頁，點「產生總覽」。整理中請稍候；失敗後可以重試。": "Return to Announcements and click Generate digest. Wait for completion; you can retry if it fails.",
   "總覽依本地日期選取今天的項目，最多整理最新 40 則；不受下方類型或已讀篩選影響。沒有今天的資料時會顯示提示。": "The digest uses today's local date and up to 40 recent items, regardless of type or read filters. A message appears if no items are available today.",
   "總覽是 AI 生成的重點整理，完整內容與截止時間請以原文為準。": "The digest is generated by AI. Check the original sources for full details and deadlines.",
@@ -167,13 +184,13 @@
   "點作業卡片開啟作業頁面；倒數與截止日期使用本地時區。": "Click an assignment card to open its page. Countdowns and deadlines use your local time zone.",
   "點「標記為已繳交」切換狀態，再點「已繳交」可改回待處理。": "Click Mark as submitted to change the status. Click Submitted to mark it as pending again.",
   "用「新增作業」加入自訂作業；卡片上的「編輯、刪除」可管理作業。": "Use Add assignment for custom assignments, and Edit or Delete on a card to manage it.",
-  "倒數顏色：一天內紅色、超過一天至三天琥珀色、超過三天至七天藍色、超過七天綠色；已截止則顯示灰色。": "Countdown colors: red within one day, amber within three days, blue within seven days, green beyond seven days, and gray after the deadline.",
+  "倒數顏色：剩餘時間少於一小時為紅色、少於二十四小時為琥珀色；其他為一般顏色，已截止則顯示灰色。": "Countdown colors: red with less than one hour remaining, amber with less than 24 hours remaining, normal otherwise, and gray after the deadline.",
   "已繳交且過期的作業會從列表隱藏。刪除同步作業後，後續同步仍可能重新載入。": "Submitted assignments are hidden after their deadline. Deleted E3 assignments may reappear after syncing.",
   "公告、信件與通知": "Announcements, messages and alerts",
   "依「類型」篩選公告或信件，依「狀態」篩選已讀或未讀；紅點表示未讀項目。": "Filter announcements and messages by Type and Status. A red dot indicates an unread item.",
   "點「查看內容」預覽全文，可切換已讀狀態或「開啟完整頁面」；「全部已讀」可一次標記。": "Click View content to preview an item, change its read status or open its full page. Mark all read updates all items.",
-  "內容頁的「中→英、英→中」使用 Google Translate，不需要 AI API Key；「顯示原文」可還原內容。": "Chinese → English and English → Chinese use Google Translate without an AI API key. Show original restores the source content.",
-  "「AI摘要」整理單篇內容，需要先啟用 AI 摘要並設定所選供應商的 API Key。": "AI summary summarizes an individual item. Enable AI summaries and set the selected provider's API key first.",
+  "內容頁的「中→英、英→中」使用 Google Translate，不需要 OpenAI API Key；「顯示原文」可還原內容。": "Chinese → English and English → Chinese use Google Translate without an OpenAI API key. Show original restores the source content.",
+  "「AI摘要」整理單篇內容，需要先啟用 AI 摘要並設定 OpenAI API Key。": "AI summary summarizes an individual item. Enable AI summaries and set your OpenAI API key first.",
   "「通知」集中顯示作業、評分、公告與成員變動提醒；24 小時內到期作業也會列入提醒。": "Alerts collects assignment, grading, announcement and membership updates, including assignments due within 24 hours.",
   "課程與下載": "Courses and downloads",
   "「課程」提供課程列表、成員統計與成績資訊。先同步課程資料，再選課程查看「統計」或「成績」。資料載入仍需有效的 E3 登入狀態。": "Courses lists your courses, member statistics and grades. Sync first, then select a course and open Statistics or Grades. An active E3 login is required to load data.",
@@ -185,7 +202,7 @@
   "擴充功能更新後，若提示失效，重新整理目前網頁即可。": "Refresh the current page if the extension stops working after an update.",
   "需要進一步排查時，可用「更多 → 查看日誌」；回報問題請用「更多 → 問題回報」。": "For troubleshooting, use More → View logs. To report an issue, use More → Report an issue.",
   "資料與外部服務": "Data and external services",
-  "課程資料、閱讀狀態及設定儲存在瀏覽器本地。使用翻譯時，待翻譯內容會傳送至 Google Translate；使用單篇摘要時，內文會傳送至所選的 Gemini 或 OpenAI；今日總覽則傳送今天項目的標題、課程、寄件者與時間。API Key 儲存在本地設定中。": "Course data, read status, settings and keys are stored locally. Translation sends content to Google Translate. Summaries and daily digests send source content to the selected Gemini or OpenAI provider.",
+  "課程資料、閱讀狀態及設定儲存在瀏覽器本地。使用翻譯時，待翻譯內容會傳送至 Google Translate；使用單篇摘要時，內文會傳送至 OpenAI；今日總覽則傳送今天項目的標題、課程、寄件者與時間。API Key 儲存在本地設定中。": "Course data, read status, settings and API keys are stored locally in your browser. Translation sends content to Google Translate. Summaries send content to OpenAI; the daily digest sends today's titles, courses, senders and timestamps.",
   "GitHub 專案": "GitHub project",
   "問題回報 / 功能建議": "Report issues / Suggest features",
   "歡迎使用檔案下載": "Welcome to Downloads",
@@ -248,10 +265,10 @@
   "關於 AI 功能": "About AI features",
   "功能：": "Features:",
   "• 翻譯：使用 Google Translate 免費服務": "• Translation: Google Translate",
-  "• AI 摘要：使用 Gemini 或 OpenAI 自動摘要長篇公告和信件": "• AI summaries: summarize announcements and messages with Gemini or OpenAI",
+  "• AI 摘要：使用 OpenAI 自動摘要長篇公告和信件": "• AI summaries: summarize announcements and messages with OpenAI",
   "• 24小時提醒：即將到期作業通知": "• 24-hour reminders: assignments due soon",
   "注意：": "Notes:",
-  "• 摘要需要所選供應商的有效 API Key": "• Summaries require a valid key for the selected provider",
+  "• 摘要需要有效的 OpenAI API Key": "• Summaries require a valid OpenAI API key",
   "• AI 推理需要幾秒鐘時間": "• AI processing may take a few seconds",
   "• 翻譯和摘要功能僅在啟用 AI 後可用": "• Enable AI to use summaries; translation is available without a key",
   "儲存設定": "Save settings",
@@ -481,7 +498,6 @@
   "今日重點": "Highlights",
   "系統": "System",
   "未知": "Unknown",
-  "分": "m",
   "週日": "Sun",
   "週一": "Mon",
   "週二": "Tue",
@@ -492,6 +508,7 @@
   "作業已更新": "Assignment updated",
   "作業已新增": "Assignment added",
   "尚未評分": "Not graded yet",
+  "無法開啟通知設定。": "Unable to open notification settings.",
   "新作業": "New assignment",
   "緊急作業": "Due soon",
   "截止提醒": "Deadline reminder",
@@ -626,15 +643,30 @@
   const browserLanguage = globalThis.chrome?.i18n?.getUILanguage?.() || globalThis.navigator?.language || 'zh-TW';
   let language = /^zh/i.test(browserLanguage) ? 'zh-TW' : 'en';
   const normalize = value => value === 'en' || value === 'zh-TW' ? value : null;
-  function text(source) {
+  const units = { minutes: { '分': 'm' }, grades: { '分': 'points' } };
+  function text(source, context) {
+    if (language === 'en' && units[context]?.[source]) return units[context][source];
     return language === 'en' ? source.replace(pattern, match => english[match]) : source;
   }
   // Translate static segments before interpolation to preserve dynamic content.
   function template(strings, ...values) {
     return strings.reduce((result, part, index) => result + text(part) + (index < values.length ? values[index] : ''), '');
   }
-  const ready = chrome.storage.local.get(['interfaceLanguage']).then(storage => {
+  // Chrome 93–94 require callbacks; also accept Promise-returning implementations.
+  function storageCall(method, value) {
+    return new Promise((resolve, reject) => {
+      const result = chrome.storage.local[method](value, data => {
+        const error = chrome.runtime?.lastError;
+        if (error) reject(new Error(error.message));
+        else resolve(data);
+      });
+      if (result && typeof result.then === 'function') result.then(resolve, reject);
+    });
+  }
+  const ready = storageCall('get', ['interfaceLanguage']).then(storage => {
     language = normalize(storage.interfaceLanguage) || language;
+  }).catch(() => {
+    // Preference reads are optional: keep the browser default and allow startup.
   });
   chrome.storage.onChanged.addListener((changes, area) => {
     if (typeof document === 'undefined' && area === 'local' && changes.interfaceLanguage) language = normalize(changes.interfaceLanguage.newValue) || language;
@@ -645,7 +677,7 @@
     async save(value) {
       const next = normalize(value);
       if (!next) throw new Error('Unsupported interface language');
-      await chrome.storage.local.set({ interfaceLanguage: next });
+      await storageCall('set', { interfaceLanguage: next });
       language = next;
     }
   };

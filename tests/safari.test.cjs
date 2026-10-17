@@ -24,9 +24,9 @@ test('Safari starts a browser-managed file link without using downloads API', as
   assert.equal(app.links[0].target, '_blank');
   assert.equal(app.links[0].rel, 'noopener noreferrer');
 });
-test('downloads reject untrusted hosts and non-HTTP schemes before browser actions', async () => {
+test('downloads reject untrusted hosts and non-HTTPS schemes before browser actions', async () => {
   const app = load([]);
-  for (const url of ['https://evile3p.nycu.edu.tw/file', 'https://e3p.nycu.edu.tw.evil.test/file', 'javascript:alert(1)']) {
+  for (const url of ['http://e3.nycu.edu.tw/file', 'https://evile3p.nycu.edu.tw/file', 'https://e3p.nycu.edu.tw.evil.test/file', 'javascript:alert(1)']) {
     await assert.rejects(app.download(url, 'test.pdf'));
   }
   assert.equal(app.links.length, 0);
@@ -46,7 +46,7 @@ test('Safari package omits unsupported permissions and matches shared sources', 
   assert.ok(!manifest.permissions.includes('notifications'));
   assert.ok(manifest.permissions.includes('nativeMessaging'));
   assert.ok(!('open_in_tab' in manifest.options_ui));
-  for (const name of ['content.js', 'background.js', 'desktop-notifications.js', 'notification-engine.js', 'notification-settings.js']) {
+  for (const name of ['content.js', 'background.js', 'desktop-notifications.js', 'notification-api.js', 'notification-engine.js', 'notification-settings.js']) {
     assert.equal(fs.readFileSync(path.join(resources, name), 'utf8'), fs.readFileSync(path.join(root, name), 'utf8'));
   }
 });
@@ -57,7 +57,7 @@ test('iPad package keeps common sources but does not advertise native desktop no
     assert.ok(!manifest.permissions.includes(permission));
   }
   assert.equal(manifest.version, JSON.parse(fs.readFileSync(path.join(root, 'manifest.json'))).version);
-  for (const name of ['content.js', 'background.js', 'desktop-notifications.js', 'notification-engine.js', 'notification-settings.js']) {
+  for (const name of ['content.js', 'background.js', 'desktop-notifications.js', 'notification-api.js', 'notification-engine.js', 'notification-settings.js']) {
     assert.equal(fs.readFileSync(path.join(resources, name), 'utf8'), fs.readFileSync(path.join(root, name), 'utf8'));
   }
 });

@@ -8,9 +8,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 PROJECT = ROOT / 'safari/NYCU E3 Helper'
-FILES = ['background.js', 'content.js', 'i18n.js', 'desktop-notifications.js', 'notification-engine.js', 'exam-detection.js',
+FILES = ['background.js', 'content.js', 'i18n.js', 'desktop-notifications.js', 'notification-api.js', 'notification-engine.js', 'exam-detection.js',
          'notification-settings.js', 'notification-settings.html',
-         'notification-settings.css', 'jszip.min.js', '128.png', '_locales']
+         'notification-settings.css', 'jszip.min.js', '128.png', '_locales', 'CHANGELOG.md']
 
 def sync_project(project, extension, native_notifications):
     resources = project / extension / 'Resources'
@@ -27,7 +27,7 @@ def sync_project(project, extension, native_notifications):
     if native_notifications:
         manifest['permissions'].append('nativeMessaging')
     manifest['options_ui'].pop('open_in_tab', None)
-    # Gemini/OpenAI summaries do not need a local Ollama service.
+    # The AI providers use hosted APIs; no local Ollama service is needed.
     manifest['host_permissions'] = [p for p in manifest['host_permissions'] if 'localhost' not in p]
     (resources / 'manifest.json').write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + '\n')
     pbx = next(project.glob('*.xcodeproj')) / 'project.pbxproj'

@@ -10,14 +10,14 @@ function functionSource(source, name) {
   assert.ok(start >= 0, `${name} exists`);
   return source.slice(start, source.indexOf('\n}', start) + 2);
 }
-function worker(fetch) {
+function worker(fetch, overrides = {}) {
   let listener;
-  const context = vm.createContext({ URL, fetch, console,
-    chrome: { runtime: { onMessage: { addListener(fn) { listener = fn; } } } }
+  const context = vm.createContext({ URL, fetch, console, AbortController, TextDecoder, setTimeout, clearTimeout, setInterval, clearInterval,
+    chrome: { runtime: { onMessage: { addListener(fn) { listener = fn; } }, getPlatformInfo: async () => ({}) } }, ...overrides
   });
   const start = background.indexOf('chrome.runtime.onMessage.addListener(');
   const end = background.indexOf('\n});', start) + 4;
-  vm.runInContext(functionSource(background, 'readAIResponse') + background.slice(start, end), context);
+  vm.runInContext(functionSource(background, 'readAIResponse') + functionSource(background, 'fetchAIResponse') + background.slice(start, end), context);
   return request => new Promise(resolve => {
     assert.equal(listener(request, {}, resolve), true);
   });
@@ -71,7 +71,7 @@ test('both workers return text and Gemini combines non-thought text parts', asyn
   assert.equal((await send({ action: 'callOpenAIResponsesApi', apiKey: 'fixture', model: 'gpt-5-nano', content: 'source' })).data, 'OpenAI summary');
   assert.equal(JSON.parse(requests[0].options.body).store, false);
   assert.equal((await send({ action: 'callGeminiApi', apiKey: 'fixture', model: 'models/future-flash', content: 'source', maxOutputTokens: 4096 })).data, 'Gemini summary');
-  assert.match(requests[1].url, /models\/future-flash:generateContent$/);
+  assert.match(requests[1].url, /models\/future-flash:streamGenerateContent\?alt=sse$/);
   assert.equal(Object.hasOwn(JSON.parse(requests[1].options.body), 'generationConfig'), false);
 });
 test('Gemini preserves explicitly supplied generation options', async () => {
@@ -83,8 +83,8 @@ test('Gemini preserves explicitly supplied generation options', async () => {
   await send({ action: 'callGeminiApi', apiKey: 'fixture', model: 'future-model', content: 'source', generationConfig: { temperature: 0.2 } });
   assert.deepEqual(body.generationConfig, { temperature: 0.2 });
 });
-function summaryContext(sendMessage) {
-  const context = vm.createContext({ console, Date, uiText: text => text, E3HelperI18n: {language:'zh-TW'}, chrome: { runtime: { sendMessage } } });
+function summaryContext(sendMessage, language = 'zh-TW') {
+  const context = vm.createContext({ console, Date, uiText: text => text, E3HelperI18n: { language }, chrome: { runtime: { sendMessage } } });
   vm.runInContext(['getAISummaryConfig', 'callSummaryProvider', 'generateAISummary', 'generateDailyDigest']
     .map(name => functionSource(content, name)).join('\n'), context);
   return context;
@@ -130,13 +130,87 @@ test('OpenAI rejects partial text from an incomplete response', async () => {
   assert.match(result.error,/max_output_tokens/);
 });
 
-test('full release keeps English summaries and digests when English is selected', async () => {
-  const requests = [];
-  const app = summaryContext((request, callback) => { requests.push(request); callback({ success: true, data: 'summary' }); });
-  app.E3HelperI18n.language = 'en';
-  const config = { provider: 'gemini', apiKey: 'fixture', model: 'future-model' };
-  await app.generateAISummary('source', config);
-  assert.match(requests[0].content, /Summarize in English/);
-  await app.generateDailyDigest([], config);
-  assert.match(requests[1].content, /使用英文/);
+for (const language of ['zh-TW', 'en']) {
+  test(`both summary providers use the selected ${language} output language`, async () => {
+    for (const provider of ['gemini', 'openai']) {
+      const requests = [];
+      const app = summaryContext((request, callback) => { requests.push(request); callback({ success: true, data: 'summary' }); }, language);
+      const config = { provider, apiKey: 'fixture', model: 'fixture-model' };
+      await app.generateAISummary('原始內文', config);
+      await app.generateDailyDigest([], config);
+      assert.ok(requests[0].content.includes(`Summarize in ${language === 'en' ? 'English' : 'Traditional Chinese'}`));
+      assert.ok(requests[1].content.includes(`使用${language === 'en' ? '英文' : '繁體中文'}寫一份精簡總覽`));
+      assert.ok(requests[1].content.includes(language === 'en' ? 'Check the original source to confirm' : '請查看原文確認'));
+      if (language === 'en') assert.ok(!requests[1].content.includes('請查看原文確認'));
+    }
+  });
+}
+
+test('slow AI requests use streaming so the worker can reply before the message port closes', async () => {
+  const send = worker(async (url, options) => {
+    const body = JSON.parse(options.body);
+    const streaming = url.includes('openai') ? body.stream === true : url.includes(':streamGenerateContent?alt=sse');
+    if (!streaming) throw new Error('The message port closed before a response was received.');
+    return jsonResponse(url.includes('openai') ? { output_text: 'overview' } : { candidates: [{ content: { parts: [{ text: 'overview' }] } }] });
+  });
+  for (const action of ['callOpenAIResponsesApi', 'callGeminiApi']) {
+    const result = await send({ action, apiKey: 'fixture', model: 'fixture', content: 'today' });
+    assert.equal(result.success, true, result.error);
+    assert.equal(result.data, 'overview');
+  }
+});
+
+function sseResponse(events) {
+  const bytes = new TextEncoder().encode(events.map(event => `data: ${JSON.stringify(event)}\r\n\r\n`).join(''));
+  return new Response(new ReadableStream({ start(controller) {
+    // Split UTF-8 characters and SSE separators across transport chunks.
+    for (let i = 0; i < bytes.length; i += 7) controller.enqueue(bytes.slice(i, i + 7));
+    controller.close();
+  } }), { headers: { 'content-type': 'text/event-stream' } });
+}
+test('streamed OpenAI completion and fragmented Gemini text return a complete overview', async () => {
+  const send = worker(async url => url.includes('openai') ? sseResponse([
+    { type: 'response.output_text.delta', delta: 'partial' },
+    { type: 'response.completed', response: { status: 'completed', output: [{ content: [{ type: 'output_text', text: '今日重點' }] }] } }
+  ]) : sseResponse([
+    { candidates: [{ content: { parts: [{ thought: true, text: 'hidden' }, { text: '今日' }] } }] },
+    { candidates: [{ content: { parts: [{ text: '重點' }] }, finishReason: 'STOP' }] }
+  ]));
+  for (const action of ['callOpenAIResponsesApi', 'callGeminiApi']) {
+    const result = await send({ action, apiKey: 'fixture', model: 'fixture', content: 'today' });
+    assert.equal(result.success, true, result.error);
+    assert.equal(result.data, '今日重點');
+  }
+});
+test('truncated, incomplete and blocked streams never return a partial digest', async () => {
+  for (const events of [
+    [{ type: 'response.output_text.delta', delta: 'partial' }],
+    [{ type: 'response.incomplete', response: { status: 'incomplete', incomplete_details: { reason: 'max_output_tokens' }, output_text: 'partial' } }],
+    [{ error: { message: 'quota exhausted' } }]
+  ]) {
+    const send = worker(async () => sseResponse(events));
+    assert.equal((await send({ action: 'callOpenAIResponsesApi', apiKey: 'fixture', model: 'fixture' })).success, false);
+  }
+  const send = worker(async () => sseResponse([{ candidates: [{ content: { parts: [{ text: 'partial' }] }, finishReason: 'MAX_TOKENS' }] }]));
+  assert.equal((await send({ action: 'callGeminiApi', apiKey: 'fixture', model: 'fixture' })).success, false);
+});
+test('AI lifetime timers keep the worker active during generation and are cleared on completion and timeout', async () => {
+  for (const timeout of [false, true]) {
+    let abort, heartbeat;
+    const cleared = [];
+    const send = worker(async (url, options) => {
+      heartbeat();
+      if (timeout) {
+        abort();
+        options.signal.throwIfAborted();
+      }
+      return jsonResponse({ output_text: 'complete' });
+    }, { setTimeout: fn => { abort = fn; return 1; }, clearTimeout: id => cleared.push(id),
+      setInterval: fn => { heartbeat = fn; return 2; }, clearInterval: id => cleared.push(id)
+    });
+    const result = await send({ action: 'callOpenAIResponsesApi', apiKey: 'fixture', model: 'fixture' });
+    assert.equal(result.success, !timeout);
+    if (timeout) assert.match(result.error, /逾時/);
+    assert.deepEqual(cleared.sort(), [1,2]);
+  }
 });

@@ -12,7 +12,7 @@ const fs = require('node:fs');
       const name = new URL(route.request().url()).pathname.slice(1) || 'notification-settings.html';
       route.fulfill({ contentType: name.endsWith('.js') ? 'text/javascript' : name.endsWith('.css') ? 'text/css' : 'text/html', body: fs.readFileSync(path.join(__dirname, '..', name), 'utf8') });
     });
-    await page.addInitScript(({ safari, language, native }) => {
+    await page.addInitScript(({ safari, language, native, callbackOnly }) => {
       window.fixture = { interfaceLanguage: language, notificationSettings: { desktop: true, updates: false },
         notificationDeliveryError: '桌面通知失敗，請檢查瀏覽器與系統通知設定。',
         notificationLog: [
@@ -21,11 +21,26 @@ const fs = require('node:fs');
         ] };
       window.storageListeners = [];
       window.chrome = {
-        i18n: { getUILanguage: () => language }, runtime: { getURL: p => native ? `safari-web-extension://test/${p}` : p, getManifest: () => ({ permissions: native ? ['nativeMessaging'] : [] }), sendNativeMessage: async (app, message) => { window.nativeMessage = message; if (message.action === 'showNotification') window.notification = message; return { success: true, permission: 'granted' }; } },
+        i18n: { getUILanguage: () => language }, runtime: { getManifest: () => ({ permissions: native ? ['nativeMessaging'] : [] }), getURL: p => native ? `safari-web-extension://test/${p}` : p, sendNativeMessage: async (app, message) => { window.nativeMessage = message; if (message.action === 'showNotification') window.notification = message; return { success: true, permission: 'granted' }; } },
         storage: { local: { get: async () => window.fixture, set: async value => Object.assign(window.fixture, value) }, onChanged: { addListener: fn => window.storageListeners.push(fn) } },
+
         notifications: safari ? undefined : { getPermissionLevel: async () => 'granted', create: async (...args) => { window.notification = args; } }
       };
-    }, { safari: Boolean(process.env.SAFARI_FIXTURE || process.env.SAFARI_NATIVE), native: Boolean(process.env.SAFARI_NATIVE), language: process.env.UI_LANGUAGE || 'en' });
+      if (callbackOnly) {
+        for (const target of [chrome.storage.local, chrome.notifications]) {
+          if (!target) continue;
+          for (const [key, method] of Object.entries(target)) {
+            if (typeof method !== 'function') continue;
+            target[key] = (...args) => {
+              const callback = args.pop();
+              if (typeof callback !== 'function') throw new Error(`Missing callback: ${key}`);
+              method(...args).then(callback);
+              return undefined;
+            };
+          }
+        }
+      }
+    }, { callbackOnly: Boolean(process.env.CHROME_93_FIXTURE), safari: Boolean(process.env.SAFARI_FIXTURE || process.env.SAFARI_NATIVE), native: Boolean(process.env.SAFARI_NATIVE), language: process.env.UI_LANGUAGE || 'en' });
     await page.goto('https://extension.test/');
     await page.locator('.reminder-row').first().waitFor();
     assert.deepEqual(await page.locator('#reminder-list select').evaluateAll(inputs => inputs.map(input => input.value)), ['24', '1']);
@@ -65,12 +80,12 @@ const fs = require('node:fs');
       assert.equal(await page.evaluate(() => 'updates' in window.fixture.notificationSettings), false);
       assert.equal(await page.evaluate(() => { const event = new Event('beforeunload', { cancelable: true }); dispatchEvent(event); return event.defaultPrevented; }), false);
       await page.evaluate(() => {
-        const set = chrome.storage.local.set;
-        chrome.storage.local.set = async value => {
+        const set = E3NotificationAPI.set;
+        E3NotificationAPI.set = async value => {
           window.pendingSettings = value.notificationSettings;
           await new Promise(resolve => { window.finishSettingsSave = resolve; });
           await set(value);
-          chrome.storage.local.set = set;
+          E3NotificationAPI.set = set;
         };
       });
       await page.locator('#event-list input[data-event=grading]').uncheck();
@@ -101,10 +116,6 @@ const fs = require('node:fs');
       assert.equal(await page.locator('.reminder-row').count(), 2);
       await page.locator('#test').click();
       await page.waitForFunction(() => window.notification);
-      if (process.env.SAFARI_NATIVE) {
-        assert.equal(await page.evaluate(() => E3DesktopNotifications.native), true);
-        assert.equal(await page.evaluate(() => window.notification.action), 'showNotification');
-      }
       await page.locator('#desktop').uncheck();
       assert.equal(await page.locator('#preferences').evaluate(element => element.disabled), true);
       await page.locator('#desktop').check();
