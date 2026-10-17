@@ -7,6 +7,12 @@
 
 ## [Unreleased]
 
+### Fixed
+- Keep Safari sync on the available E3 tab origin and deliver manual assignment reminders.
+- Avoid moved quiz ID collisions and rotate exam source scan batches fairly.
+
+## [Unreleased]
+
 ### ✨ 新增 (Added)
 - 「課業」整合作業與考試，支援類型篩選、手動考試，以及從課綱、公告／信件、syllabus PDF／Word 產生待確認建議。
 - 通知可依新作業、評分、公告、信件與課程成員變動分別開關；每日模式合併一般通知摘要，設定頁顯示權限、送出紀錄與未儲存提示。
