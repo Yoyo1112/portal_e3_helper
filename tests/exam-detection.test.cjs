@@ -295,7 +295,7 @@ test('two stale tabs accept exams without replacing each other or newly synced a
   const worker = loadWorker(storage, () => { throw new Error('Unexpected fetch'); });
   function tab() {
     const context = vm.createContext({ allAssignments: [], examSuggestions: structuredClone(storage.examSuggestions), E3ExamDetection: exams,
-      clearTimeout, saveAssignmentsTimeout: null, saveAssignmentsPending: false, console,
+      clearTimeout, saveAssignmentsTimeout: null, saveAssignmentsPending: false, assignmentSaveRevision: 0, assignmentSavesInFlight: 0, console,
       chrome: { storage: { local: { set: async update => Object.assign(storage, structuredClone(update)) } } },
       sendExamMessage: request => worker.resolveExamSuggestion(request.id, request.decision, request.candidateIndex, request.fingerprint),
       showTemporaryMessage() {}, uiText: text => text, refreshExamViews: async () => {} });
@@ -376,7 +376,7 @@ test('converting submitted coursework to an exam resets both submission statuses
   assert.equal(assignment.kind, 'exam');
   assert.equal(storage.assignmentStatuses.manual, 'pending');
   assert.equal(storage.assignmentStatuses.other, 'submitted');
-  assert.match(contentSource, /await convertAssignmentToExam\(assignment, examType\)/);
+  assert.match(contentSource, /await convertAssignmentToExam\(assignment, examType, deadlineTimestamp\)/);
 });
 
 test('a rescan reordering the same dates cannot accept the wrong radio option', async () => {
@@ -430,5 +430,284 @@ test('bounded exam scans advance through unread and least recently read posts', 
     reads.length = 0;
     await context.scanAnnouncementExams({ force });
     assert.ok(reads.includes('4'));
+  }
+});
+
+test('compatible numbered and unnumbered quiz posts merge within the first batch', () => {
+  const quiz = { courseId: '1', course: 'Course', examType: 'quiz', deadline: at(2026, 11, 5, 9), timeKnown: 'exact', source: 'announcement', url: 'post/1', confidence: 'high' };
+  for (const posts of [
+    [{ ...quiz, occurrence: 'Quiz 1' }, { ...quiz, url: 'post/2' }],
+    [{ ...quiz, url: 'post/2' }, { ...quiz, occurrence: 'Quiz 1' }]
+  ]) {
+    const result = exams.mergeSuggestions([], posts, [], now);
+    assert.equal(result.length, 1);
+    assert.equal(result[0].candidates.length, 2);
+    assert.equal(exams.mergeSuggestions(result, posts, [], now).length, 1);
+  }
+  const distinct = exams.mergeSuggestions([], [{ ...quiz, occurrence: 'Quiz 1' }, { ...quiz, occurrence: 'Quiz 2', url: 'post/2' }], [], now);
+  assert.equal(distinct.length, 2);
+});
+
+test('restored confirmed quizzes reconnect to their original coursework', () => {
+  const quiz = { courseId: '1', course: 'Course', examType: 'quiz', deadline: at(2026, 11, 5, 9), timeKnown: 'exact', source: 'syllabusFile', url: 'pdf', confidence: 'high', occurrence: 'Quiz 1' };
+  const original = exams.mergeSuggestions([], [quiz], [], now);
+  const assignment = exams.toExamAssignment(original[0], quiz);
+  const empty = exams.mergeSuggestions(original, [], [assignment], now, c => c.url === 'pdf');
+  assert.equal(empty.length, 0);
+  const restored = exams.mergeSuggestions(empty, [quiz], [assignment], now, c => c.url === 'pdf');
+  assert.equal(restored.length, 1);
+  assert.equal(restored[0].id, assignment.examKey);
+  assert.equal(restored[0].state, 'accepted');
+  assert.equal(exams.pendingSuggestions(restored).length, 0);
+});
+
+test('confirmed quiz recovery respects occurrence, course and source identity', () => {
+  const quiz = { courseId: '1', course: 'Course', examType: 'quiz', deadline: at(2026, 11, 5, 9), timeKnown: 'exact', source: 'syllabusFile', url: 'pdf', confidence: 'high', occurrence: 'Quiz 1' };
+  const suggestion = exams.mergeSuggestions([], [quiz], [], now)[0];
+  const assignment = exams.toExamAssignment(suggestion, quiz);
+  for (const fresh of [{ ...quiz, occurrence: 'Quiz 2' }, { ...quiz, url: 'other' }, { ...quiz, courseId: '2' }, { ...quiz, deadline: at(2026, 11, 12, 9) }]) {
+    const result = exams.mergeSuggestions([], [fresh], [assignment], now);
+    assert.notEqual(result[0].id, assignment.examKey);
+    assert.equal(result[0].state, 'new');
+  }
+  // A manually changed deadline is retained; restored source evidence offers an update.
+  const restored = exams.mergeSuggestions([], [quiz], [{ ...assignment, deadline: at(2026, 11, 6, 9) }], now);
+  assert.equal(restored[0].id, assignment.examKey);
+  assert.equal(restored[0].state, 'update');
+});
+
+test('a generic post cannot bridge two differently numbered quizzes on later scans', () => {
+  const quiz = { courseId: '1', course: 'Course', examType: 'quiz', deadline: at(2026, 11, 5, 9), timeKnown: 'exact', source: 'announcement', confidence: 'high' };
+  const posts = [{ ...quiz, occurrence: 'Quiz 1', url: 'post/1' }, { ...quiz, url: 'post/2' }, { ...quiz, occurrence: 'Quiz 2', url: 'post/3' }];
+  let result = exams.mergeSuggestions([], posts, [], now);
+  assert.equal(result.length, 2);
+  const ids = result.map(s => s.id);
+  for (let i = 0; i < 3; i++) {
+    result = exams.mergeSuggestions(result, posts, [], now);
+    assert.equal(result.length, 2);
+    assert.deepEqual(result.map(s => s.id), ids);
+  }
+});
+
+test('sync final write preserves exams accepted while status checks are pending', async () => {
+  const c = { courseId: '1', course: 'Course', examType: 'final', deadline: at(2099, 11, 5, 9), timeKnown: 'exact', source: 'timetable', url: 'outline' };
+  const storage = { assignments: [], examSuggestions: exams.mergeSuggestions([], [c]) };
+  const worker = loadWorker(storage, () => {});
+  worker.console = { log() {}, error() {} };
+  worker.getSesskey = async () => 'fixture';
+  worker.getE3SyncOrigin = async () => 'https://e3p.nycu.edu.tw';
+  worker.fetchWithTimeout = async () => ({ ok: true, json: async () => [{ data: { events: [] } }] });
+  let release, entered;
+  const gate = new Promise(resolve => { release = resolve; });
+  const waiting = new Promise(resolve => { entered = resolve; });
+  worker.checkAssignmentSubmissionStatus = async () => { entered(); await gate; return null; };
+  worker.detectAndNotifyNewAssignments = async () => {};
+  const background = fs.readFileSync(path.join(__dirname, '../background.js'), 'utf8');
+  const start = background.indexOf('async function syncAssignments(');
+  vm.runInContext(background.slice(start, background.indexOf('\n}\n', start) + 2), worker);
+  const syncing = worker.syncAssignments();
+  await waiting;
+  await worker.resolveExamSuggestion(storage.examSuggestions[0].id, 'accept', 0);
+  release();
+  await syncing;
+  assert.equal(storage.assignments.length, 1);
+  assert.equal(storage.assignments[0].kind, 'exam');
+});
+
+test('exam view refresh preserves a pending deletion, including a save started during its read', async () => {
+  for (const duringRead of [false, true]) {
+    const storage = { assignments: [{ eventId: 'deleted' }] };
+    const context = vm.createContext({ allAssignments: [], saveAssignmentsTimeout: duringRead ? null : 1, saveAssignmentsPending: false,
+      assignmentSaveRevision: 0, assignmentSavesInFlight: 0, savedAssignments: [{ eventId: 'deleted' }], E3ExamDetection: exams,
+      loadExamSuggestions: async () => {}, document: { querySelector: () => null, getElementById: () => null },
+      chrome: { storage: { local: { get: async () => {
+        if (duringRead) vm.runInContext('assignmentSaveRevision++; saveAssignmentsTimeout = 1;', context);
+        return structuredClone(storage);
+      } } } } });
+    const helperStart = contentSource.indexOf('function mergeSavedAssignments(');
+    vm.runInContext(contentSource.slice(helperStart, contentSource.indexOf('\n}\n', helperStart) + 2) + contentFunction('refreshExamViews'), context);
+    await context.refreshExamViews();
+    assert.equal(context.allAssignments.length, 0);
+  }
+});
+
+test('editing exam names preserves unknown start times and class-slot durations', async () => {
+  const context = vm.createContext({ saveAssignmentStatus: async () => { throw new Error('Existing status must be preserved'); } });
+  vm.runInContext(contentFunction('convertAssignmentToExam'), context);
+  for (const timeKnown of ['date-only', 'class-slot']) {
+    const assignment = { eventId: timeKnown, kind: 'exam', deadline: at(2099, 11, 5, 8), endTime: at(2099, 11, 5, 11), timeKnown, manualStatus: 'submitted' };
+    await context.convertAssignmentToExam(assignment, 'quiz', assignment.deadline);
+    assert.equal(assignment.timeKnown, timeKnown);
+    assert.equal(assignment.endTime, at(2099, 11, 5, 11));
+    assert.equal(assignment.manualStatus, 'submitted');
+    await context.convertAssignmentToExam(assignment, 'quiz', at(2099, 11, 5, 9));
+    assert.equal(assignment.timeKnown, 'exact');
+    assert.equal(assignment.endTime, null);
+  }
+});
+
+test('refreshing an older announcement keeps its complete evidence beyond 200 cached candidates', async () => {
+  const items = Array.from({ length: 210 }, (_, i) => ({ id: String(i), title: 'Final exam', courseId: String(i), timestamp: Date.now() - i * 1000, url: 'post/' + i }));
+  const cache = Object.fromEntries(items.map(item => ['announcement:' + item.id, { mode: 'regex', at: Date.now(),
+    sourceKey: JSON.stringify([item.title, item.timestamp, item.url, item.courseId, item.courseName]),
+    candidates: [{ courseId: item.courseId, examType: 'final', deadline: at(2099, 11, 5), source: 'announcement', url: item.url }]
+  }]));
+  // Only the oldest source needs a read.
+  cache['announcement:209'].at -= 86400001;
+  const storage = { examExtractionCache: cache, examSuggestions: exams.mergeSuggestions([], Object.values(cache).flatMap(entry => entry.candidates)) };
+  const worker = loadWorker(storage, () => {});
+  const context = vm.createContext({ Date, console, E3ExamDetection: exams, allAnnouncements: items, allMessages: [], allCourses: [],
+    chrome: worker.chrome, getAISummaryConfig: () => ({}), fetchExamSourceText: async () => 'Final exam 12/23',
+    sendExamMessage: request => worker.mergeExamCandidates(request.candidates, request.replace) });
+  vm.runInContext(contentFunction('scanAnnouncementExams'), context);
+  await context.scanAnnouncementExams();
+  assert.ok(storage.examSuggestions.some(s => s.courseId === '209'));
+  assert.equal(storage.examSuggestions.length, 210);
+});
+
+test('oversized evidence batches reject before deleting stored source evidence', async () => {
+  const candidate = { courseId: '1', examType: 'final', deadline: at(2099, 11, 5), source: 'announcement', url: 'post' };
+  const storage = { examSuggestions: exams.mergeSuggestions([], [candidate]) };
+  const before = structuredClone(storage);
+  const worker = loadWorker(storage, () => {});
+  await assert.rejects(worker.mergeExamCandidates(Array(201).fill(candidate), ['post']), /200/);
+  assert.deepEqual(storage, before);
+});
+
+test('a pending local deletion preserves exams accepted by another tab', async () => {
+  const base = [{ eventId: 'delete-me', name: 'Delete me' }];
+  const candidate = { courseId: '1', examType: 'final', deadline: at(2099, 11, 5), source: 'timetable', url: 'outline' };
+  const storage = { assignments: structuredClone(base), examSuggestions: exams.mergeSuggestions([], [candidate]) };
+  const worker = loadWorker(storage, () => {});
+  const timers = [];
+  const context = vm.createContext({ allAssignments: [], savedAssignments: structuredClone(base), assignmentSaveQueue: Promise.resolve(),
+    assignmentSaveRevision: 0, assignmentSavesInFlight: 0, saveAssignmentsTimeout: null, saveAssignmentsPending: false,
+    E3ExamDetection: exams, console: { log() {}, error(error) { throw error; } }, setTimeout: fn => { timers.push(fn); return 1; },
+    clearTimeout() {}, refreshExamViews: async () => {},
+    chrome: worker.chrome, sendExamMessage: async request => ({ success: true, assignments: await worker.saveAssignmentChanges(request.changes) }) });
+  for (const name of ['mergeSavedAssignments', 'persistAssignmentChanges', 'saveAssignments']) {
+    if (contentSource.includes('async function ' + name + '(')) vm.runInContext(contentFunction(name), context);
+  }
+  // Synchronous helper is added by the fix; the old whole-list save is the red path.
+  if (contentSource.includes('function mergeSavedAssignments(')) {
+    const start = contentSource.indexOf('function mergeSavedAssignments(');
+    vm.runInContext(contentSource.slice(start, contentSource.indexOf('\n}\n', start) + 2), context);
+  }
+  await context.saveAssignments();
+  await worker.resolveExamSuggestion(storage.examSuggestions[0].id, 'accept', 0);
+  await timers[0]();
+  assert.equal(storage.assignments.length, 1);
+  assert.equal(storage.assignments[0].kind, 'exam');
+  assert.equal(storage.assignments.some(a => a.eventId === 'delete-me'), false);
+});
+
+test('sync retains an exam converted back to ordinary coursework during status checks', async () => {
+  const exam = { eventId: 'converted', kind: 'exam', examType: 'quiz', isManual: true, deadline: at(2099, 11, 5), name: 'Quiz' };
+  const storage = { assignments: [exam], examSuggestions: [] };
+  const worker = loadWorker(storage, () => {});
+  worker.console = { log() {}, error() {} };
+  worker.getSesskey = async () => 'fixture';
+  worker.getE3SyncOrigin = async () => 'https://e3p.nycu.edu.tw';
+  worker.fetchWithTimeout = async () => ({ ok: true, json: async () => [{ data: { events: [] } }] });
+  worker.checkAssignmentSubmissionStatus = async () => {
+    const { assignments } = await worker.chrome.storage.local.get('assignments');
+    delete assignments[0].kind;
+    delete assignments[0].examType;
+    assignments[0].name = 'Ordinary task';
+    await worker.chrome.storage.local.set({ assignments });
+    return null;
+  };
+  worker.detectAndNotifyNewAssignments = async () => {};
+  const background = fs.readFileSync(path.join(__dirname, '../background.js'), 'utf8');
+  const start = background.indexOf('async function syncAssignments(');
+  vm.runInContext(background.slice(start, background.indexOf('\n}\n', start) + 2), worker);
+  await worker.syncAssignments();
+  assert.equal(storage.assignments.length, 1);
+  assert.equal(storage.assignments[0].kind, undefined);
+  assert.equal(storage.assignments[0].name, 'Ordinary task');
+});
+
+test('local changes made during a queued save survive without overwriting remote fields', async () => {
+  const base = [{ eventId: 'edit', name: 'Old name', course: 'Old course', deadline: at(2099, 11, 5) }];
+  const storage = { assignments: [{ ...base[0], deadline: at(2099, 11, 6) }, { eventId: 'other-tab', kind: 'exam' }] };
+  const worker = loadWorker(storage, () => {});
+  let release, entered;
+  const gate = new Promise(resolve => { release = resolve; });
+  const waiting = new Promise(resolve => { entered = resolve; });
+  const context = vm.createContext({ allAssignments: [{ ...base[0], name: 'New name' }], savedAssignments: structuredClone(base),
+    assignmentSaveQueue: Promise.resolve(), assignmentSavesInFlight: 0, E3ExamDetection: exams,
+    sendExamMessage: async request => {
+      const assignments = await worker.saveAssignmentChanges(request.changes);
+      entered();
+      await gate;
+      return { success: true, assignments };
+    } });
+  vm.runInContext(contentFunction('persistAssignmentChanges'), context);
+  const saving = context.persistAssignmentChanges();
+  await waiting;
+  context.allAssignments[0].course = 'New course';
+  release();
+  await saving;
+  assert.equal(context.allAssignments[0].course, 'New course');
+  assert.equal(context.allAssignments[0].deadline, at(2099, 11, 6));
+  await context.persistAssignmentChanges();
+  assert.equal(storage.assignments[0].name, 'New name');
+  assert.equal(storage.assignments[0].course, 'New course');
+  assert.equal(storage.assignments[0].deadline, at(2099, 11, 6));
+  assert.equal(storage.assignments[1].eventId, 'other-tab');
+});
+
+test('sync preserves an overdue omitted task converted into a future exam', async () => {
+  const storage = { assignments: [{ eventId: 'overdue', isManual: true, name: 'Old task', deadline: Date.now() - 10 * 86400000, manualStatus: 'pending' }] };
+  const worker = loadWorker(storage, () => {});
+  worker.console = { log() {}, error() {} };
+  worker.getSesskey = async () => 'fixture';
+  worker.getE3SyncOrigin = async () => 'https://e3p.nycu.edu.tw';
+  worker.fetchWithTimeout = async () => ({ ok: true, json: async () => [{ data: { events: [] } }] });
+  worker.checkAssignmentSubmissionStatus = async () => {
+    const { assignments } = await worker.chrome.storage.local.get('assignments');
+    Object.assign(assignments[0], { kind: 'exam', examType: 'quiz', deadline: at(2099, 11, 5) });
+    await worker.chrome.storage.local.set({ assignments });
+    return null;
+  };
+  worker.detectAndNotifyNewAssignments = async () => {};
+  const background = fs.readFileSync(path.join(__dirname, '../background.js'), 'utf8');
+  const start = background.indexOf('async function syncAssignments(');
+  vm.runInContext(background.slice(start, background.indexOf('\n}\n', start) + 2), worker);
+  await worker.syncAssignments();
+  assert.equal(storage.assignments.length, 1);
+  assert.equal(storage.assignments[0].kind, 'exam');
+  assert.equal(storage.assignments[0].deadline, at(2099, 11, 5));
+});
+
+test('slow collected coursework details update the current saved record and never restore deleted records', async () => {
+  for (const deleted of [false, true]) {
+    let release, entered, finished;
+    const gate = new Promise(resolve => { release = resolve; });
+    const waiting = new Promise(resolve => { entered = resolve; });
+    const done = new Promise(resolve => { finished = resolve; });
+    const item = { tagName: 'A', textContent: 'assignment', dataset: { eventId: 'collected' }, href: 'https://e3p.nycu.edu.tw/?time=4070908800', querySelector: () => null };
+    let saves = 0;
+    const context = vm.createContext({ allAssignments: [], console: { log() {}, error(error) { throw error; } },
+      document: { querySelectorAll: () => [item], querySelector: () => null },
+      loadAssignmentStatuses: async () => ({}),
+      getEventDetails: async () => { entered(); await gate; return { url: 'https://e3p.nycu.edu.tw/mod/assign/view.php?id=1', course: { fullname: 'Course details' } }; },
+      saveAssignments: async () => { saves++; context.allAssignments = structuredClone(context.allAssignments); },
+      updateSidebarContent: () => { if (saves > 1 || deleted) finished(); } });
+    const start = contentSource.indexOf('function collectAssignmentInfo(');
+    vm.runInContext(contentSource.slice(start, contentSource.indexOf('\n}\n', start) + 2), context);
+    context.collectAssignmentInfo();
+    await waiting;
+    context.allAssignments = deleted ? [] : structuredClone(context.allAssignments);
+    release();
+    if (deleted) {
+      await new Promise(setImmediate);
+      assert.equal(context.allAssignments.length, 0);
+      assert.equal(saves, 1);
+    } else {
+      await done;
+      assert.equal(context.allAssignments[0].course, 'Course details');
+      assert.match(context.allAssignments[0].url, /mod\/assign/);
+    }
   }
 });

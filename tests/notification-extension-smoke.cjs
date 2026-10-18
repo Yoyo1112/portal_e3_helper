@@ -151,7 +151,7 @@ const path = require('node:path');
       await E3Notifications.tick();
       return { storage: await chrome.storage.local.get(['notificationQueue', 'notificationDeliveryError']), active: await chrome.notifications.getAll() };
     });
-    assert.ok(retried.active['e3-alert-integration-retry']);
+    assert.ok(retried.active['e3-alert-integration-retry'], JSON.stringify(retried));
     assert.equal(retried.storage.notificationQueue.length, 0);
     assert.equal(retried.storage.notificationDeliveryError, '');
     const reminders = await worker.evaluate(async () => {

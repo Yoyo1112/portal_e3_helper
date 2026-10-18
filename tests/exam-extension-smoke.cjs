@@ -63,6 +63,56 @@ const path = require('node:path');
     const converted = await waitForStorage(data => data.assignments.find(item => item.eventId === 'manual')?.kind === 'exam');
     assert.equal(converted.assignments.find(item => item.eventId === 'manual').manualStatus, 'pending');
     assert.equal(converted.assignmentStatuses.manual, 'pending');
+    for (const timeKnown of ['class-slot', 'date-only']) {
+      const expected = await worker.evaluate(async timeKnown => {
+        const data = await chrome.storage.local.get('assignments');
+        const exam = data.assignments.find(item => item.eventId === 'manual');
+        exam.deadline = Math.floor(exam.deadline / 60000) * 60000;
+        exam.timeKnown = timeKnown;
+        exam.endTime = exam.deadline + 3 * 3600000;
+        await chrome.storage.local.set({ assignments: data.assignments });
+        return exam;
+      }, timeKnown);
+      await pages[0].reload();
+      await pages[0].locator('.e3-helper-sidebar-toggle').click();
+      await pages[0].locator('[data-tab="assignments"]').click();
+      await pages[0].locator('.e3-helper-edit-assignment[data-event-id="manual"]').click();
+      const newName = 'Renamed ' + timeKnown;
+      await pages[0].locator('#e3-helper-assignment-name').fill(newName);
+      await pages[0].locator('#e3-helper-add-assignment-form button[type="submit"]').click();
+      const renamed = (await waitForStorage(data => data.assignments.some(item => item.eventId === 'manual' && item.name === newName))).assignments.find(item => item.eventId === 'manual');
+      assert.equal(renamed.timeKnown, expected.timeKnown);
+      assert.equal(renamed.endTime, expected.endTime);
+      assert.equal(renamed.deadline, expected.deadline);
+    }
+    await worker.evaluate(async () => {
+      await mergeExamCandidates([{ courseId: 'C', course: 'C', examType: 'final',
+        deadline: Date.now() + 20 * 86400000, timeKnown: 'exact', source: 'syllabusFile', url: 'https://e3p.nycu.edu.tw/file/C' }]);
+      const save = saveAssignmentChanges;
+      let release;
+      const gate = new Promise(resolve => { release = resolve; });
+      globalThis.releaseFixtureSave = release;
+      globalThis.fixtureSaveEntered = false;
+      saveAssignmentChanges = async changes => {
+        globalThis.fixtureSaveEntered = true;
+        await gate;
+        return save(changes);
+      };
+    });
+    pages[0].once('dialog', dialog => dialog.accept());
+    await pages[0].locator('.e3-helper-delete-assignment[data-event-id="manual"]').click();
+    for (let attempt = 0; attempt < 100; attempt++) {
+      if (await worker.evaluate(() => globalThis.fixtureSaveEntered)) break;
+      await pages[0].waitForTimeout(50);
+    }
+    assert.equal(await worker.evaluate(() => globalThis.fixtureSaveEntered), true);
+    await pages[1].locator('[data-exam-suggestion="exam:C:final"] [data-exam-action="accept"]').click();
+    await waitForStorage(data => data.assignments.some(item => item.examKey === 'exam:C:final'));
+    await worker.evaluate(() => globalThis.releaseFixtureSave());
+    const raced = await waitForStorage(data => !data.assignments.some(item => item.eventId === 'manual'));
+    assert.ok(raced.assignments.some(item => item.examKey === 'exam:C:final'), 'a pending deletion must preserve the other tab accepted exam');
+    console.log('Passed: pending deletion and concurrent two-tab exam acceptance both persist.');
+    console.log('Passed: exam rename preserves date-only and class-slot timing metadata.');
     console.log('Passed: real MV3 two-tab acceptance preserves saved coursework, corrected start times update in place, and converting submitted coursework resets both statuses.');
   } finally {
     await context?.close();

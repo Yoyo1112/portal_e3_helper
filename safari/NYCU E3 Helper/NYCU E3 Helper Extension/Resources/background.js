@@ -227,6 +227,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     );
     return true;
   }
+  if (request.action === 'saveAssignmentChanges') {
+    saveAssignmentChanges(request.changes).then(
+      assignments => sendResponse({ success: true, assignments }),
+      error => sendResponse({ success: false, error: error.message })
+    );
+    return true;
+  }
   if (request.action === 'resolveExamSuggestion') {
     resolveExamSuggestion(request.id, request.decision, request.candidateIndex, request.fingerprint).then(
       suggestions => sendResponse({ success: true, suggestions }),
@@ -557,6 +564,15 @@ function updateExamSuggestions(mutate) {
   return operation;
 }
 
+async function saveAssignmentChanges(changes) {
+  let saved;
+  await updateExamSuggestions((examSuggestions, assignments) => {
+    saved = E3ExamDetection.applyAssignmentChanges(assignments, changes);
+    return { examSuggestions, assignments: saved };
+  });
+  return saved;
+}
+
 async function fetchTimetableJson(route, code) {
   const response = await fetchWithTimeout(`${TIMETABLE_ORIGIN}/?r=main/${route}`, {
     method: 'POST',
@@ -611,8 +627,9 @@ async function scanTimetableExams({ force = false } = {}) {
 
 async function mergeExamCandidates(candidates, replace) {
   if (!Array.isArray(candidates)) throw new Error('Invalid exam candidates');
+  if (candidates.length > 200) throw new Error('Exam batch exceeds 200 candidates; send complete sources in smaller batches');
   const sources = new Set(Array.isArray(replace) ? replace.map(String) : []);
-  return updateExamSuggestions((existing, assignments) => E3ExamDetection.mergeSuggestions(existing, candidates.slice(0, 200), assignments, Date.now(),
+  return updateExamSuggestions((existing, assignments) => E3ExamDetection.mergeSuggestions(existing, candidates, assignments, Date.now(),
     c => sources.has(String(c.url))));
 }
 
@@ -1023,13 +1040,22 @@ async function getSesskey(origin) {
 async function getE3SyncOrigin() {
   if (!chrome.runtime.getURL('').startsWith('safari-web-extension:')) return 'https://e3p.nycu.edu.tw';
   const tabs = await chrome.tabs.query({ url: ['https://e3.nycu.edu.tw/*', 'https://e3p.nycu.edu.tw/*'] });
+  const origins = [];
   for (const tab of tabs.sort((a, b) => Number(b.active) - Number(a.active))) {
     try {
       const url = new URL(tab.url);
-      if (url.protocol === 'https:' && ['e3.nycu.edu.tw', 'e3p.nycu.edu.tw'].includes(url.hostname) && !url.port && !url.username && !url.password) return url.origin;
+      if (url.protocol === 'https:' && ['e3.nycu.edu.tw', 'e3p.nycu.edu.tw'].includes(url.hostname) && !url.port && !url.username && !url.password && !origins.includes(url.origin)) origins.push(url.origin);
     } catch {}
   }
-  throw new Error('請保持已登入的 E3 分頁開啟後重試。');
+  let firstSignedOut, lastError;
+  for (const origin of origins) {
+    const loggedIn = await checkLoginStatus(error => { lastError = error; }, origin);
+    if (loggedIn === true) return origin;
+    if (loggedIn === false) firstSignedOut ||= origin;
+  }
+  // Preserve the normal signed-out result when every usable host needs login.
+  if (firstSignedOut) return firstSignedOut;
+  throw lastError || new Error('請保持已登入的 E3 分頁開啟後重試。');
 }
 
 async function fetchE3FromPage(url, options = {}, timeout = 10000) {
@@ -1211,6 +1237,7 @@ async function syncAssignments(origin) {
     const storage = await chrome.storage.local.get(['assignmentStatuses', 'assignments']);
     const statuses = storage.assignmentStatuses || {};
     const oldAssignments = storage.assignments || [];
+    const syncBaseline = JSON.parse(JSON.stringify(oldAssignments));
     console.log('E3 Helper: 讀取到的手動狀態:', statuses);
     console.log('E3 Helper: 手動狀態數量:', Object.keys(statuses).length);
 
@@ -1377,8 +1404,19 @@ async function syncAssignments(origin) {
     // 檢測新作業並發送通知
     await detectAndNotifyNewAssignments(assignments, oldAssignments);
 
-    // 儲存作業列表
-    await chrome.storage.local.set({ assignments: assignments });
+    // Acceptance and the final sync merge share a queue. Read confirmed exams
+    // again here: the network/status work above may have used an older snapshot.
+    await updateExamSuggestions((examSuggestions, latest) => {
+      const changes = E3ExamDetection.diffAssignments(syncBaseline, latest);
+      // A user may change an overdue record that the earlier expiry pass omitted.
+      // Keep that fresh record before applying patches; local edits take priority.
+      const mergedIds = new Set(assignments.map(item => item.eventId));
+      const changedIds = new Set(changes.upserts.map(change => change.eventId));
+      const seed = [...assignments, ...latest.filter(item => changedIds.has(item.eventId) && !mergedIds.has(item.eventId))];
+      const merged = E3ExamDetection.applyAssignmentChanges(seed, changes);
+      assignments.splice(0, assignments.length, ...merged);
+      return { examSuggestions, assignments };
+    });
     console.log(`E3 Helper: 已同步 ${assignments.length} 個作業（包含 ${keptOldAssignments.length} 個保留的已繳交作業）`);
 
     return assignments;

@@ -2037,9 +2037,17 @@ async function saveAssignmentStatus(eventId, status) {
   console.log('E3 Helper: 當前所有手動狀態:', statuses);
 }
 
-async function convertAssignmentToExam(assignment, examType) {
-  Object.assign(assignment, { kind: 'exam', examType, timeKnown: 'exact', endTime: null, manualStatus: 'pending' });
-  await saveAssignmentStatus(assignment.eventId, 'pending');
+async function convertAssignmentToExam(assignment, examType, deadline = assignment.deadline) {
+  const converting = assignment.kind !== 'exam';
+  if (converting || Number(deadline) !== Number(assignment.deadline)) {
+    assignment.timeKnown = 'exact';
+    assignment.endTime = null;
+  }
+  Object.assign(assignment, { kind: 'exam', examType, deadline });
+  if (converting) {
+    assignment.manualStatus = 'pending';
+    await saveAssignmentStatus(assignment.eventId, 'pending');
+  }
 }
 
 // 從儲存空間讀取作業列表
@@ -2054,8 +2062,37 @@ async function loadAssignments() {
 // 儲存作業列表（防抖版本，避免多次同時寫入）
 let saveAssignmentsTimeout = null;
 let saveAssignmentsPending = false;
+let assignmentSaveRevision = 0;
+let assignmentSavesInFlight = 0;
+let savedAssignments = [];
+let assignmentSaveQueue = Promise.resolve();
+
+function mergeSavedAssignments(assignments) {
+  const changes = E3ExamDetection.diffAssignments(savedAssignments, allAssignments);
+  allAssignments = E3ExamDetection.applyAssignmentChanges(assignments, changes);
+  savedAssignments = JSON.parse(JSON.stringify(assignments));
+}
+
+async function persistAssignmentChanges() {
+  const operation = assignmentSaveQueue.then(async () => {
+    assignmentSavesInFlight++;
+    try {
+      const snapshot = JSON.parse(JSON.stringify(allAssignments));
+      const changes = E3ExamDetection.diffAssignments(savedAssignments, snapshot);
+      const response = await sendExamMessage({ action: 'saveAssignmentChanges', changes });
+      const pending = E3ExamDetection.diffAssignments(snapshot, allAssignments);
+      allAssignments = E3ExamDetection.applyAssignmentChanges(response.assignments, pending);
+      savedAssignments = JSON.parse(JSON.stringify(response.assignments));
+    } finally {
+      assignmentSavesInFlight--;
+    }
+  });
+  assignmentSaveQueue = operation.catch(() => {});
+  return operation;
+}
 
 async function saveAssignments() {
+  assignmentSaveRevision++;
   // 如果已經有待處理的儲存，標記需要再次儲存
   if (saveAssignmentsTimeout) {
     saveAssignmentsPending = true;
@@ -2065,13 +2102,14 @@ async function saveAssignments() {
   // 設定防抖延遲
   saveAssignmentsTimeout = setTimeout(async () => {
     try {
-      await chrome.storage.local.set({ assignments: allAssignments });
+      await persistAssignmentChanges();
       console.log(`E3 Helper: 已儲存 ${allAssignments.length} 個作業到 storage`);
     } catch (error) {
       console.error('E3 Helper: 儲存作業失敗', error);
     }
 
     saveAssignmentsTimeout = null;
+    await refreshExamViews();
 
     // 如果在等待期間有新的儲存請求，再次執行
     if (saveAssignmentsPending) {
@@ -2083,6 +2121,7 @@ async function saveAssignments() {
 
 // 立即儲存作業（用於關鍵操作）
 async function saveAssignmentsImmediate() {
+  assignmentSaveRevision++;
   if (saveAssignmentsTimeout) {
     clearTimeout(saveAssignmentsTimeout);
     saveAssignmentsTimeout = null;
@@ -2090,7 +2129,7 @@ async function saveAssignmentsImmediate() {
   saveAssignmentsPending = false;
 
   try {
-    await chrome.storage.local.set({ assignments: allAssignments });
+    await persistAssignmentChanges();
     console.log(`E3 Helper: 已立即儲存 ${allAssignments.length} 個作業到 storage`);
   } catch (error) {
     console.error('E3 Helper: 儲存作業失敗', error);
@@ -3211,10 +3250,10 @@ function createSidebar() {
         if (assignment) {
           assignment.name = name;
           assignment.course = course;
-          assignment.deadline = deadlineTimestamp;
           if (isExamEntry) {
-            await convertAssignmentToExam(assignment, examType);
+            await convertAssignmentToExam(assignment, examType, deadlineTimestamp);
           } else {
+            assignment.deadline = deadlineTimestamp;
             delete assignment.kind;
             delete assignment.examType;
           }
@@ -7062,9 +7101,10 @@ function renderExamSuggestionPanel(context) {
 }
 
 async function refreshExamViews() {
+  const revision = assignmentSaveRevision;
   await loadExamSuggestions();
   const { assignments = [] } = await chrome.storage.local.get(['assignments']);
-  allAssignments = assignments;
+  if (revision === assignmentSaveRevision && !assignmentSavesInFlight) mergeSavedAssignments(assignments);
   if (document.querySelector('.e3-helper-content[data-content="assignments"].active')) await updateSidebarContent();
   const digestExams = document.getElementById('e3-helper-digest-exams');
   if (digestExams) digestExams.innerHTML = renderExamSuggestionPanel('digest');
@@ -7174,7 +7214,7 @@ async function scanAnnouncementExams({ force = false } = {}) {
     if (!entry?.at || entry.at < Date.now() - 90 * DAY) delete cache[key];
   }
   await chrome.storage.local.set({ examExtractionCache: cache });
-  const candidates = items.flatMap(item => cache[keyOf(item)]?.candidates || []);
+  const candidates = readItems.flatMap(item => cache[keyOf(item)]?.candidates || []);
   await sendExamMessage({ action: 'mergeExamCandidates', candidates, replace: readItems.map(item => item.url) });
   if (readError) throw readError;
 }
@@ -8400,6 +8440,7 @@ async function scanSelectedCourses() {
   const downloadStatus = document.querySelector('.e3-helper-download-status');
   if (!pdfListContainer) return;
 
+  document.getElementById('e3-helper-safari-download-links')?.remove();
   allPDFs = [];
   selectedPDFs.clear();
 
@@ -8624,6 +8665,7 @@ async function scanCurrentPage() {
   if (!pdfListContainer) return;
 
   pdfListContainer.innerHTML = uiText('<div class="e3-helper-loading">正在掃描當前頁面...</div>');
+  document.getElementById('e3-helper-safari-download-links')?.remove();
   allPDFs = [];
   selectedPDFs.clear();
 
@@ -8774,6 +8816,7 @@ async function scanAllCourses() {
   const downloadStatus = document.querySelector('.e3-helper-download-status');
   if (!pdfListContainer) return;
 
+  document.getElementById('e3-helper-safari-download-links')?.remove();
   allPDFs = [];
   selectedPDFs.clear();
 
@@ -10336,23 +10379,27 @@ function collectAssignmentInfo() {
           // 載入已儲存的手動標記狀態
           (async () => {
             const statuses = await loadAssignmentStatuses();
+            const currentForStatus = allAssignments.find(item => item.eventId === eventId);
+            if (!currentForStatus) return;
             if (statuses[eventId]) {
-              assignmentData.manualStatus = statuses[eventId];
+              currentForStatus.manualStatus = statuses[eventId];
               console.log(`E3 Helper: 作業 ${eventId} 載入手動標記狀態: ${statuses[eventId]}`);
             }
 
             // 非同步獲取 URL 和課程資訊（不阻塞載入）
             const eventDetails = await getEventDetails(eventId);
+            const current = allAssignments.find(item => item.eventId === eventId);
+            if (!current) return;
             if (eventDetails) {
               let needSave = false;
               if (eventDetails.url) {
-                assignmentData.url = eventDetails.url;
+                current.url = eventDetails.url;
                 console.log(`E3 Helper: 作業 ${eventId} URL: ${eventDetails.url}`);
                 needSave = true;
               }
               // 如果 API 返回了課程資訊，且當前沒有課程名稱，則使用 API 的
-              if (eventDetails.course && eventDetails.course.fullname && !assignmentData.course) {
-                assignmentData.course = eventDetails.course.fullname;
+              if (eventDetails.course && eventDetails.course.fullname && !current.course) {
+                current.course = eventDetails.course.fullname;
                 console.log(`E3 Helper: 作業 ${eventId} 從 API 獲取課程: ${eventDetails.course.fullname}`);
                 needSave = true;
               }
@@ -10594,7 +10641,7 @@ function manualSync() {
           loadAssignments(),
           chrome.storage.local.get(['courses', 'lastSyncTime', 'assignmentStatuses'])
         ]).then(([assignments, storage]) => {
-          allAssignments = assignments;
+          mergeSavedAssignments(assignments);
           console.log(`E3 Helper: 同步後載入了 ${assignments.length} 個作業`);
           console.log('E3 Helper: 作業狀態詳情:', assignments.map(a => ({ id: a.eventId, name: a.name, status: a.manualStatus })));
 
@@ -10777,7 +10824,7 @@ async function init() {
   const storage = await chrome.storage.local.get(['assignments', 'courses', 'gradeData', 'announcements', 'readAnnouncements', 'lastSyncTime']);
 
   if (storage.assignments) {
-    allAssignments = storage.assignments;
+    mergeSavedAssignments(storage.assignments);
     console.log(`E3 Helper: 從 storage 載入了 ${allAssignments.length} 個作業`);
 
     // 檢查作業課程名稱

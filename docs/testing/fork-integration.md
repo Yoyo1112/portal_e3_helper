@@ -1,49 +1,59 @@
-# Fork integration test build — 2026-10-17
+# Fork integration test build — 2026-10-18
 
-This fork combines upstream main with every upstream PR open at integration time. Upstream PRs remain open; this integration does not merge them upstream. The fork keeps version 3.0.1 and its packaging workflow as release metadata. Runtime defaults follow upstream: countdowns are urgent below one hour, warning below 24 hours, and normal otherwise; the Help project link points upstream. No new store release or TestFlight upload is implied.
+Load `/Users/you-cheng/Projects/e3-helper/fork` as the unpacked Chrome/Brave extension, then reload the extension and refresh open E3 pages. Disable other copies to avoid duplicate notifications. This is the stable Git worktree on `codex/fork-testing`; its Safari macOS/iPad projects are under `safari/`.
 
-| Source | Verified head | Included behavior |
+Runtime defaults follow upstream. The fork retains version 3.0.1 and its packaging workflow as release metadata. Primary-checkout uncommitted demo/native work remains separate. This update is local: it does not push fork main, merge upstream PRs, publish a release or upload TestFlight.
+
+## Verified sources
+
+| Source | Verified head | Integration status |
 | --- | --- | --- |
-| Fork main | `7e73bb55d444d852cfb09bbcb30ae252f8f7aa50` | Existing complete fork features and mail-date migration |
-| Upstream main | `3b6d1ecbcbc55654aefaedd511be147b9fc68c9c` | Security hardening, restart-safe download guards, callback-compatible notifications, localization fixes, AI streaming/keepalive, mail dates |
-| [Safari PR #6](https://github.com/NYCU-Chung/portal_e3_helper/pull/6) | `3648dee4a1bc86b784d8dd97c466923be24a4052` | Safari API compatibility, native macOS notifications, touch UI, per-file download links, packaged changelog |
-| [Exams PR #10](https://github.com/NYCU-Chung/portal_e3_helper/pull/10) | `ff5d2fc7ed607af6e2c3355c16ea67a345026cc0` | Coursework/exam suggestions, all four sources, concurrent scans and accepted-choice validation |
-| [Notifications PR #11](https://github.com/NYCU-Chung/portal_e3_helper/pull/11) | `f6abc3d9eae9fe5df3d0535876624ece61b6f65a` | Event switches, daily digest, reminder retry/overflow, participant leases, unsaved settings |
-| [Site scope PR #12](https://github.com/NYCU-Chung/portal_e3_helper/pull/12) | `914fd0fb964e7c8e98757f4ccd2a5f0255b057af` | Default E3/e3p/timetable/portal scope and exact HTTPS guards |
+| Upstream main | `165bad5ae0126cff1d8374477f7c8db0a1f6f974` | Includes merged notifications #11 and site scope #12 |
+| [Safari PR #6](https://github.com/NYCU-Chung/portal_e3_helper/pull/6) | `ef60f88bdfd54df5914339ef7546c886a1e6612f` | Open; latest review fixes included locally |
+| [Exams PR #10](https://github.com/NYCU-Chung/portal_e3_helper/pull/10) | `2eb6a13c4fb5503cff624991f14091f94eada5d2` | Open; latest review fixes included locally |
+| Notifications #11 | `f6abc3d9eae9fe5df3d0535876624ece61b6f65a` | Merged upstream on 2026-10-18 |
+| Site scope #12 | `914fd0fb964e7c8e98757f4ccd2a5f0255b057af` | Merged upstream on 2026-10-18 |
+| Fork remote main | `b3ce98f801c6590e1b1258b608c4c0d52c8163ef` | Verified unchanged; this local checkout includes additional fixes |
 
-The exam module and notification API are both included in the two Safari Xcode resource phases and sync list. The Chrome ZIP deduplicates shared CHANGELOG.md while retaining every referenced runtime file.
+The prior local baseline was `c2d5b26` (runtime integration `da1e252`). This update applies Safari fixes `8452c1d` and `ef60f88`, and exam fixes `eb61734`, `820190f`, `98eeb7a`, `dde4dec` and `2eb6a13`. The notifications and site-scope behavior now merged upstream was already included in that baseline. These are recorded source patches, not claims that the PR commits were merged upstream.
 
-## Validation
+## Included fixes
 
-- 175 Node tests; syntax checks for runtime JS; whitespace/conflict checks.
-- Offline Chromium: bilingual sidebar, settings/provider selection, translations, touch/drag/resize, Safari-capability download links, language reload and fresh site permissions.
-- Notification options: English callback-only Chrome 93 fixture, Chinese unsupported transport and macOS native transport fixtures.
-- Actual MV3 extension: two-tab exam acceptance and revisions, notification storage/alarm delivery, retry, browser restart and saved-setting races. Also repeated against the extracted delivery ZIP.
-- macOS and iPad unsigned Debug builds succeeded; built content/background/i18n/notification-api/exam-detection bytes matched the integrated source.
+- Safari selects an authenticated E3 host even when the active tab on the other host is signed out or unreachable, and retains that origin for the entire sync.
+- Starting any new file scan removes prepared links from the previous selection.
+- Compatible numbered/unnumbered quiz posts merge within a scan; restored confirmed quizzes reconnect to their coursework; distinct numbered quizzes remain separate on repeat scans.
+- Exam acceptance, local coursework field changes and sync's final merge share a background queue. Pending deletions, in-flight edits, type conversions and overdue coursework edited during sync preserve concurrent changes.
+- Renaming an exam preserves date-only or class-slot timing and its duration; only conversion or an actual time change resets timing metadata.
+- Announcement scans replace complete refreshed source batches, preserving older evidence beyond 200 cached candidates; oversized requests fail before storage changes.
+- Delayed coursework-detail responses find the current record by ID and do not restore deleted records.
+
+Both Safari resource bundles are synced from these combined sources, including the exam module, notification API and changelog. The Xcode resource phases already include these shared files.
+
+## Validation for this update
+
+- All **192 Node tests** pass from this checkout, including the new Safari and exam regressions.
+- Combined test fixtures explicitly provide the Safari origin helper and the exams scan stub when testing isolated sync functions.
+- Real MV3 two-tab exam acceptance, pending deletion/save races, timing metadata edits and submitted-coursework conversion passed.
+- Fork UI: six tabs, language/settings, touch tap/resize/drag/cancel and narrow split view passed.
+- Safari-capability bilingual download links, real click navigation, safe filenames, selection replacement and clearing links on a new scan passed.
+- Real MV3 notification APIs, saved-disable race, daily scheduling, restart persistence, failed-delivery retry, reminders and alarm dispatch passed on an independent rerun. An initial concurrent run failed its retry assertion; the fixture now includes queue-state diagnostics for that assertion.
+- Both Safari resource bundles match the combined shared source byte for byte; the exam engine and native notification adapter match their verified PR heads. Runtime syntax and whitespace checks passed.
+- No new native build or physical Safari/iPad test is claimed for this update. Prior unsigned native builds and the earlier 175-test run belong to the 2026-10-17 integration.
 
 ## Manual testing
 
-1. Extract the test ZIP. Reload the existing unpacked extension from that folder, then refresh open E3 pages. Use only one enabled copy to avoid duplicate notifications.
-2. Check assignments, grades, course membership and file scanning after logging into real E3; verify old mail refreshes with its sent date.
-3. Test Gemini/OpenAI summaries and today's digest with your selected provider/key, including a longer response.
-4. Test exam suggestions from timetable, announcement/mail and selected PDF/Word syllabus files; accept, ignore and revise dates across two tabs.
-5. Test event switches, immediate/daily delivery, deadline reminders and OS notification permission.
-6. On macOS/iPad, test sidebar touch/resize and each Safari download link after building/installing the native app.
+1. Reload the unpacked extension from this `fork/` directory and refresh E3 tabs.
+2. Check assignments, grades, course membership and file scans after signing into E3; verify old mail refreshes with its sent date.
+3. Test Gemini/OpenAI summaries and today's digest with your selected provider/key.
+4. Test timetable, announcement/mail and PDF/Word syllabus exam suggestions; accept, ignore, rename and revise exams across two tabs.
+5. Test pending deletion alongside acceptance in another tab, assignment/exam conversions and sync; verify exams and reminders remain.
+6. Test notification event switches, immediate/daily delivery and deadline reminders.
+7. On macOS/iPad, test sidebar touch/resize and each Safari download link, including a new scan after preparing links.
 
-Authenticated E3, live AI requests, physical Safari/iPad behavior and OS banner visibility still require manual checks. Primary-checkout uncommitted demo/native work was not included because it is outside the upstream PR snapshots.
-
-## Upstream-default audit
-
-On 2026-10-17 the integration was rebuilt independently from upstream main plus the four PR heads above. Every root runtime JS/HTML/CSS file matches that result byte for byte after restoring the countdown thresholds/colors and Help project link. The only manifest difference is the fork release version (3.0.1 versus upstream 2.3.0). New exam, notification, site-scope, Safari and mail/AI fixes remain intact. This supersedes the earlier decision to retain old fork countdown defaults.
-
-## Stable local test checkout — 2026-10-17
-
-Open `/Users/you-cheng/Projects/e3-helper/fork` as the unpacked Chrome/Brave extension. This is a Git worktree on `codex/fork-testing`, sharing history with the primary checkout. Safari macOS/iPad projects are under this worktree's `safari/` directory. Disable other copies of this extension before testing.
-
-The integrated runtime commit is `da1e252`. The current Safari and exam PR heads in the table include the four review fixes: matching the active E3 origin throughout sync, safe native notification fallback links, unique exam occurrence IDs, and rotating source refresh batches. All 175 Node tests passed again from this stable checkout. The earlier browser/native validation above belongs to the recorded integration runs; physical device and authenticated E3 checks remain manual.
-
-The fork follows upstream runtime defaults, retaining newer features/fixes and fork version 3.0.1. This checkout does not automatically update when GitHub changes. Refresh upstream and open PR heads, integrate changes here, sync Safari resources and validate before the next test cycle. Do not copy the primary checkout's older files over this folder. Primary uncommitted demo/native work remains separate; upstream PRs remain open and fork remote main is still `b3ce98f`.
+Authenticated E3, live AI requests, physical Safari/iPad behavior and OS banner visibility still require manual checks.
 
 ## Release order
 
-The user clarified on 2026-10-17 that changes should be integrated upstream before publishing them to TestFlight. Open PR contents may be tested locally in this fork checkout, but an open upstream PR or a successful fork test does not satisfy the upstream-integration prerequisite for a new TestFlight release. Primary uncommitted demo/native changes remain separate for now. This records release order only; it does not authorize merging upstream PRs or uploading a build.
+Changes must be integrated upstream before publishing to TestFlight. Open PR contents may be tested locally, but an open PR or successful fork test does not satisfy that prerequisite. This update does not authorize merging upstream PRs or uploading a build. The upstream split series remains incomplete while #6 and #10 are open.
+
+This checkout does not automatically update when GitHub changes. Integrate verified changes, sync Safari resources and validate before the next testing cycle. Do not copy older primary-checkout files over this folder. Historical ZIPs under `dist/` do not include this update.

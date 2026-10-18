@@ -46,6 +46,8 @@ const path = require('node:path');
       await page.locator('.e3-helper-pdf-checkbox').nth(1).uncheck();
       await page.locator('#e3-helper-download-separate').tap();
       assert.equal(await list.locator('a').count(), 1);
+      await page.locator('#e3-helper-scan-current').tap();
+      assert.equal(await list.count(), 0, 'a new scan removes old prepared links');
       assert.deepEqual(errors, []);
       if (process.env.SCREENSHOT_PATH && language === 'en') await page.screenshot({ path: process.env.SCREENSHOT_PATH });
       await context.close();

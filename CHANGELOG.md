@@ -8,6 +8,13 @@
 ## [Unreleased]
 
 ### Fixed
+- Choose an authenticated Safari E3 host even when the active tab on the other host is signed out or unreachable.
+- Remove stale prepared download links whenever a new Safari file scan starts.
+- Merge compatible quiz posts within a scan and reconnect restored quiz evidence to confirmed coursework without creating duplicate reminders.
+- Preserve accepted exams during assignment sync and pending local coursework edits during exam view refresh.
+- Keep exam timing metadata when editing names, and replace announcement evidence only with complete refreshed source batches.
+- Save local coursework field changes through the shared queue, preserving concurrent exam acceptance and exam-to-assignment conversions during sync.
+- Retain overdue coursework edited during sync and apply delayed course-detail responses to the current saved record.
 - Keep Safari sync on the available E3 tab origin and deliver manual assignment reminders.
 - Avoid moved quiz ID collisions and rotate exam source scan batches fairly.
 
