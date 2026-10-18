@@ -2,7 +2,7 @@
 
 Load `/Users/you-cheng/Projects/e3-helper/fork` as the unpacked Chrome/Brave extension, then reload the extension and refresh open E3 pages. Disable other copies to avoid duplicate notifications. This is the stable Git worktree on `codex/fork-testing`; its Safari macOS/iPad projects are under `safari/`.
 
-Runtime defaults follow upstream. The fork retains version 3.0.1 and its packaging workflow as release metadata. Primary-checkout uncommitted demo/native work remains separate. This update is local: it does not push fork main, merge upstream PRs, publish a release or upload TestFlight.
+Runtime defaults follow upstream. The fork retains version 3.0.1 and its packaging workflow as release metadata. Primary-checkout uncommitted demo/native work remains separate. The user authorized forwarding fork main to this tested integration on 2026-10-18. The local split plan records the verified push and CI results. This does not merge upstream PRs, publish a release or upload TestFlight.
 
 ## Verified sources
 
@@ -13,7 +13,7 @@ Runtime defaults follow upstream. The fork retains version 3.0.1 and its packagi
 | [Exams PR #10](https://github.com/NYCU-Chung/portal_e3_helper/pull/10) | `2eb6a13c4fb5503cff624991f14091f94eada5d2` | Open; latest review fixes included locally |
 | Notifications #11 | `f6abc3d9eae9fe5df3d0535876624ece61b6f65a` | Merged upstream on 2026-10-18 |
 | Site scope #12 | `914fd0fb964e7c8e98757f4ccd2a5f0255b057af` | Merged upstream on 2026-10-18 |
-| Fork remote main | `b3ce98f801c6590e1b1258b608c4c0d52c8163ef` | Verified unchanged; this local checkout includes additional fixes |
+| Fork main before this integration | `b3ce98f801c6590e1b1258b608c4c0d52c8163ef` | Verified pre-update baseline; all fixes are in runtime integration commit `3d1a265` |
 
 The prior local baseline was `c2d5b26` (runtime integration `da1e252`). This update applies Safari fixes `8452c1d` and `ef60f88`, and exam fixes `eb61734`, `820190f`, `98eeb7a`, `dde4dec` and `2eb6a13`. The notifications and site-scope behavior now merged upstream was already included in that baseline. These are recorded source patches, not claims that the PR commits were merged upstream.
 
