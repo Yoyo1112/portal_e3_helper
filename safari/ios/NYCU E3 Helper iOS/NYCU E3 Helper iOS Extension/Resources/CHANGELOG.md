@@ -8,6 +8,7 @@
 ## [Unreleased]
 
 ### Fixed
+- Keep pending exam cards and counts in sync between Coursework and Today's digest, including hidden tabs after accepting or dismissing a suggestion.
 - Choose an authenticated Safari E3 host even when the active tab on the other host is signed out or unreachable.
 - Remove stale prepared download links whenever a new Safari file scan starts.
 - Merge compatible quiz posts within a scan and reconnect restored quiz evidence to confirmed coursework without creating duplicate reminders.
