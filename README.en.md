@@ -79,6 +79,8 @@ The helper displays its sidebar on the two E3 hosts, timetable and portal by def
 
 ## AI settings and privacy
 
+New to API keys? Follow the [API key setup tutorial](docs/features/ai-api-setup.md#english) for Gemini's free tier and OpenAI's optional input/output sharing incentive, including eligibility, costs and privacy.
+
 Open **More → Settings**, enable AI summaries, choose Gemini or OpenAI, enter its API key, choose a model and click **Save settings**. **Test connection** checks the connection. Account access, pricing and quotas depend on your provider account.
 
 Course data, read status, settings and API keys are stored locally in your browser. Translation sends content to Google Translate. Individual summaries send the item body to the selected Gemini or OpenAI provider; daily digests send today's titles, courses, senders and timestamps to that provider. OpenAI summary requests use the Responses API with `store: false`. The extension uses your existing E3 login and does not ask for your E3 password.

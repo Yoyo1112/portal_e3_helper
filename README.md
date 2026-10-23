@@ -145,6 +145,8 @@ iPad 版專案已加入，最低 iPadOS 26，安裝與 TestFlight 打包請見 [
 
 ### 啟用 Gemini／OpenAI 摘要
 
+第一次使用請看 [API Key 設定教學](docs/features/ai-api-setup.md)：包含 Gemini 免費方案，以及 OpenAI 分享輸入／輸出優惠的資格、費用與隱私說明。
+
 1. 開啟側欄頂欄的「更多 → 設定」。
 2. 勾選「啟用 AI 摘要」。
 3. 選擇 Gemini 或 OpenAI，填入自己的對應 API Key，選擇摘要模型。
