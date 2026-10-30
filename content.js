@@ -518,6 +518,9 @@ style.textContent = `
   }
 
   .e3-helper-sidebar-header {
+    position: sticky;
+    top: 0;
+    z-index: 3;
     background: var(--e3-ink);
     color: var(--e3-on-ink);
     border-bottom: 2px solid rgba(255,255,255,0.2);
