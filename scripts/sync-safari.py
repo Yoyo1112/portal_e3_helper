@@ -8,9 +8,14 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 PROJECT = ROOT / 'safari/NYCU E3 Helper'
-FILES = ['all-sites.js', 'all-sites-setting.js', 'all-sites-bootstrap.js', 'background.js', 'content.js', 'i18n.js', 'desktop-notifications.js', 'notification-api.js', 'notification-engine.js', 'exam-detection.js',
+FILES = ['background.js', 'content.js', 'i18n.js', 'exam-detection.js', 'desktop-notifications.js', 'notification-api.js', 'notification-engine.js',
          'notification-settings.js', 'notification-settings.html',
          'notification-settings.css', 'jszip.min.js', '128.png', '_locales', 'CHANGELOG.md']
+# Chrome PR #16 can merge before or after this Safari branch.
+# Include its dependencies only when they exist in the merged source tree.
+OPTIONAL_SIDEBAR_FILES = ['all-sites.js', 'all-sites-setting.js', 'all-sites-bootstrap.js',
+                          'all-sites-panel.html', 'all-sites-panel.js', 'all-sites-panel.css']
+FILES += [name for name in OPTIONAL_SIDEBAR_FILES if (ROOT / name).exists()]
 
 def sync_project(project, extension, native_notifications):
     resources = project / extension / 'Resources'
@@ -28,6 +33,7 @@ def sync_project(project, extension, native_notifications):
         manifest['permissions'].append('nativeMessaging')
     manifest.pop('optional_permissions', None)
     manifest.pop('optional_host_permissions', None)
+    manifest.pop('web_accessible_resources', None)
     manifest['options_ui'].pop('open_in_tab', None)
     # The AI providers use hosted APIs; no local Ollama service is needed.
     manifest['host_permissions'] = [p for p in manifest['host_permissions'] if 'localhost' not in p]

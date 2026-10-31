@@ -7,6 +7,9 @@
 
 ## [Unreleased]
 
+### Fixed
+- Isolate the optional all-websites launcher from host CSS and hide it when printing. Create private coursework/settings only on click in an extension-origin iframe; destroy it and revoke broad optional host access on opt-out.
+
 ### Added
 - Add an opt-in floating button on all websites for Chrome (off by default). Request optional site access only when enabled, show synced coursework on Google and other ordinary pages, and hide/unregister it when disabled.
 

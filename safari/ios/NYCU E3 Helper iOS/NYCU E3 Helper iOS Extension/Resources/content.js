@@ -8,8 +8,9 @@ const isE3Site = location.protocol === 'https:' &&
 const isTimetableSite = location.protocol === 'https:' && location.hostname === 'timetable.nycu.edu.tw';
 const isPortalSite = location.protocol === 'https:' && location.hostname === 'portal.nycu.edu.tw';
 const defaultSite = isE3Site || isTimetableSite || isPortalSite;
+const isolatedPanel = globalThis.E3HelperAllSitesFrame === true && location.protocol === 'chrome-extension:' && location.pathname === '/all-sites-panel.html';
 if (!defaultSite) {
-  if (!globalThis.E3HelperAllSites || !['http:', 'https:'].includes(location.protocol)) return;
+  if (!isolatedPanel) return;
   chrome.storage.local.get('showOnAllSites').then(data => {
     if (data.showOnAllSites === true) startHelper();
   });
@@ -10830,25 +10831,13 @@ async function checkVersionUpdate() {
 // 初始化
 async function init() {
   await E3HelperI18n.ready;
-  if (!defaultSite) {
-    const visibilityStyle = document.createElement('style');
-    document.head.appendChild(visibilityStyle);
-    const updateVisibility = enabled => {
-      if (!enabled) {
-        const sidebar = document.querySelector('.e3-helper-sidebar.expanded');
-        sidebar?.querySelector('#e3-helper-close-btn')?.click();
-      }
-      visibilityStyle.textContent = enabled ? '' : '.e3-helper-sidebar, .e3-helper-sidebar-toggle, .e3-helper-log-modal, .e3-helper-toast, #e3-helper-add-assignment-modal, #e3-helper-changelog-modal { display: none !important; }';
-    };
+  if (isolatedPanel) {
     chrome.storage.onChanged.addListener((changes, area) => {
-      if (area !== 'local') return;
-      if (changes.showOnAllSites) updateVisibility(changes.showOnAllSites.newValue === true);
-      if (changes.assignments) {
+      if (area === 'local' && changes.assignments) {
         mergeSavedAssignments(changes.assignments.newValue || []);
         updateSidebarContent();
       }
     });
-    updateVisibility((await chrome.storage.local.get('showOnAllSites')).showOnAllSites === true);
   }
   bindExamSuggestionEvents();
   // 檢查 extension context 是否有效
@@ -10939,6 +10928,11 @@ async function init() {
     window.addEventListener('load', () => {
       setTimeout(collectAssignmentInfo, 500);
     });
+  }
+
+  if (isolatedPanel) {
+    document.querySelector('.e3-helper-sidebar')?.classList.add('expanded');
+    document.getElementById('e3-helper-close-btn')?.focus();
   }
 
   // 每 5 分鐘更新一次同步狀態顯示

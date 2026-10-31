@@ -5,22 +5,34 @@
   const origins = ['http://*/*', 'https://*/*'];
   const excludeMatches = ['https://e3.nycu.edu.tw/*', 'https://e3p.nycu.edu.tw/*',
     'https://timetable.nycu.edu.tw/*', 'https://portal.nycu.edu.tw/*'];
-  const files = ['all-sites-bootstrap.js', ...chrome.runtime.getManifest().content_scripts[0].js];
+  const files = ['all-sites-bootstrap.js'];
   let queue = Promise.resolve();
   function reconcile() {
     const work = queue.catch(() => {}).then(async () => {
       const { showOnAllSites } = await chrome.storage.local.get('showOnAllSites');
       const enabled = showOnAllSites === true && await chrome.permissions.contains({ permissions: ['scripting'], origins });
-      if (!chrome.scripting?.registerContentScripts) {
-        if (enabled) throw new Error('This setting requires Chrome 96 or later.');
-        if (showOnAllSites === true && !enabled) await chrome.storage.local.set({ showOnAllSites: false });
+      if (!enabled) {
+        if (showOnAllSites === true) await chrome.storage.local.set({ showOnAllSites: false });
+        if (chrome.scripting?.getRegisteredContentScripts) {
+          const old = await chrome.scripting.getRegisteredContentScripts({ ids: [id] });
+          if (old.length) await chrome.scripting.unregisterContentScripts({ ids: [id] });
+        }
+        const granted = await chrome.permissions.getAll();
+        const broad = (granted.origins || []).filter(origin => origins.includes(origin) || origin === '*://*/*' || origin === '<all_urls>');
+        if (broad.length && chrome.scripting?.executeScript) {
+          const tabs = await chrome.tabs.query({ url: origins });
+          await Promise.allSettled(tabs.filter(tab => tab.id && !excludeMatches.some(pattern => tab.url?.startsWith(pattern.slice(0, -1)))).map(tab => chrome.scripting.executeScript({ target: { tabId: tab.id }, files })));
+        }
+        if ((await chrome.storage.local.get('showOnAllSites')).showOnAllSites === true) return;
+        if (broad.length && !await chrome.permissions.remove({ origins: broad })) throw new Error('Unable to revoke all-websites access. Check extension site access in your browser.');
         return;
       }
+      if (!chrome.scripting?.registerContentScripts) throw new Error('This setting requires Chrome 96 or later.');
       const registered = await chrome.scripting.getRegisteredContentScripts({ ids: [id] });
-      if (!enabled) {
-        if (registered.length) await chrome.scripting.unregisterContentScripts({ ids: [id] });
-        if (showOnAllSites === true) await chrome.storage.local.set({ showOnAllSites: false });
-        return;
+      // Replace the older registration that injected private DOM into host pages.
+      if (registered.length && JSON.stringify(registered[0].js) !== JSON.stringify(files)) {
+        await chrome.scripting.unregisterContentScripts({ ids: [id] });
+        registered.length = 0;
       }
       if (registered.length) return;
       await chrome.scripting.registerContentScripts([{
