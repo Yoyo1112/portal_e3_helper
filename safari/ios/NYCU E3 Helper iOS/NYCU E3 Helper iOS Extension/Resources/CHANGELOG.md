@@ -7,6 +7,9 @@
 
 ## [Unreleased]
 
+### Added
+- Add an opt-in floating button on all websites for Chrome (off by default). Request optional site access only when enabled, show synced coursework on Google and other ordinary pages, and hide/unregister it when disabled.
+
 ### Fixed
 - Keep pending exam cards and counts in sync between Coursework and Today's digest, including hidden tabs after accepting or dismissing a suggestion.
 - Choose an authenticated Safari E3 host even when the active tab on the other host is signed out or unreachable.

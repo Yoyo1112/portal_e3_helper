@@ -59,7 +59,7 @@ iPad 版專案已加入，最低 iPadOS 26，安裝與 TestFlight 打包請見 [
 3. 開啟「開發人員模式」，點「載入未封裝項目」，選擇包含 `manifest.json` 的專案資料夾。
 4. 開啟 E3 網頁，點右側的「E3 Helper」入口。
 
-更新本地程式碼後，請先在擴充功能管理頁重新載入擴充功能，再重新整理已開啟的網頁。新安裝預設在 https://e3.nycu.edu.tw/、https://e3p.nycu.edu.tw/ 、https://timetable.nycu.edu.tw/ 與 https://portal.nycu.edu.tw/ 顯示側欄，不需手動調整網站存取設定；其他網站與分頁不會載入側欄或讀取頁面內容。
+更新本地程式碼後，請先在擴充功能管理頁重新載入擴充功能，再重新整理已開啟的網頁。新安裝預設在 https://e3.nycu.edu.tw/、https://e3p.nycu.edu.tw/ 、https://timetable.nycu.edu.tw/ 與 https://portal.nycu.edu.tw/ 顯示側欄，不需手動調整網站存取設定；未啟用全網站浮動按鈕時，其他網站與分頁不會載入側欄或讀取頁面內容。
 
 ## 介面與首次使用
 
@@ -281,3 +281,9 @@ gh release create v<版本> dist/nycu-e3-helper-<版本>.zip --target main --tit
 ## 授權
 
 MIT License
+
+### 在所有網站顯示浮動按鈕（Chrome 96 以上）
+
+預設關閉，維持只在 E3、課綱網站與校務入口顯示。到「更多 → 設定 → 開啟網站顯示設定」，在擴充功能選項頁開啟「在所有網站顯示浮動按鈕」；也可直接從擴充功能管理頁開啟選項。此開關立即儲存；首次開啟時，Chrome 會詢問一般 HTTP／HTTPS 網站的存取權，拒絕後仍保持關閉。
+
+開啟後，在 Google 等一般網站也能點擊 E3 Helper 按鈕，查看已同步的作業與截止倒數；開啟側欄不會自動打開 E3。作業仍需有效的 E3 登入與同步才能更新。關閉後，一般網站的按鈕與側欄立即隱藏，之後不再注入；E3 等原本支援的網站不受影響。Chrome 新分頁、設定頁與 Chrome Web Store 等受限制頁面不支援。

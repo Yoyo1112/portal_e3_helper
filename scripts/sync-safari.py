@@ -8,7 +8,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 PROJECT = ROOT / 'safari/NYCU E3 Helper'
-FILES = ['background.js', 'content.js', 'i18n.js', 'desktop-notifications.js', 'notification-api.js', 'notification-engine.js', 'exam-detection.js',
+FILES = ['all-sites.js', 'all-sites-setting.js', 'all-sites-bootstrap.js', 'background.js', 'content.js', 'i18n.js', 'desktop-notifications.js', 'notification-api.js', 'notification-engine.js', 'exam-detection.js',
          'notification-settings.js', 'notification-settings.html',
          'notification-settings.css', 'jszip.min.js', '128.png', '_locales', 'CHANGELOG.md']
 
@@ -26,6 +26,8 @@ def sync_project(project, extension, native_notifications):
     manifest['permissions'] = [p for p in manifest['permissions'] if p not in ('downloads', 'notifications')]
     if native_notifications:
         manifest['permissions'].append('nativeMessaging')
+    manifest.pop('optional_permissions', None)
+    manifest.pop('optional_host_permissions', None)
     manifest['options_ui'].pop('open_in_tab', None)
     # The AI providers use hosted APIs; no local Ollama service is needed.
     manifest['host_permissions'] = [p for p in manifest['host_permissions'] if 'localhost' not in p]
