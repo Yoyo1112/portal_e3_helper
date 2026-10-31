@@ -41,12 +41,13 @@
     root.innerHTML = `<style>
       :host { contain: layout style; }
       @media print { :host { display: none !important; } }
-      button { box-sizing:border-box; position:absolute; right:0; top:0; width:46px; height:46px; min-width:46px; min-height:46px; margin:0; padding:0; display:flex; align-items:center; justify-content:center; gap:8px; border:1px solid #75685c; border-right:0; border-radius:12px 0 0 12px; background:#292723; color:#f6f1e8; cursor:pointer; font:600 13px/1 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+      button { box-sizing:border-box; position:absolute; right:0; top:0; width:132px; height:46px; min-width:132px; min-height:46px; margin:0; padding:0 13px; display:flex; align-items:center; justify-content:flex-start; gap:8px; border:1px solid #d7d3cb; border-right:0; border-radius:12px 0 0 12px; background:#b3261e; color:#ffffff; cursor:pointer; font:600 13px/1 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; transform:translateX(86px); transition:transform 180ms cubic-bezier(.2,.8,.2,1); }
       button[hidden] { display:none; }
-      button:hover, button:focus-visible { width:132px; }
-      button span { display:none; }
-      button:hover span, button:focus-visible span { display:inline; }
-      svg { width:20px; height:20px; flex:none; color:#d9a36c; }
+      button:hover, button:focus-visible { transform:translateX(0); }
+      button span { opacity:0; transform:translateX(4px); transition:opacity 120ms ease, transform 160ms ease; pointer-events:none; white-space:nowrap; }
+      button:hover span, button:focus-visible span { opacity:1; transform:translateX(0); }
+      @media (prefers-reduced-motion: reduce) { button, button span { transition:none; } }
+      svg { width:20px; height:20px; flex:none; color:#ffffff; }
       iframe { width:100%; height:100%; display:block; border:0; background:white; color-scheme:normal; }
     </style><button type="button" title="E3 Helper" aria-label="E3 Helper" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 5h6a2 2 0 0 1 2 2v14a3 3 0 0 0-3-3H4zM20 5h-6a2 2 0 0 0-2 2v14a3 3 0 0 1 3-3h5z"/></svg><span>E3 Helper</span></button>`;
     button = root.querySelector('button');
