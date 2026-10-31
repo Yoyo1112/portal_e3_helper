@@ -30,4 +30,5 @@ jobs:
       - name: Launcher and printing regression
         run: node tests/launcher-print-smoke.cjs
       - name: Existing UI regression
+        if: success() || failure()
         run: node tests/ui-smoke.cjs

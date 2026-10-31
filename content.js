@@ -1699,6 +1699,20 @@ style.textContent += `
     padding: 0 10px !important;
     gap: 8px !important;
   }
+  /* Touch can retain :focus-visible after the close button restores focus. */
+  @media (hover: none) and (pointer: coarse) {
+    .e3-helper-sidebar-toggle:focus-visible {
+      width: 46px !important;
+      min-width: 46px !important;
+      max-width: 46px !important;
+      justify-content: center !important;
+      padding: 0 !important;
+      gap: 0 !important;
+    }
+    .e3-helper-sidebar-toggle:focus-visible .e3-helper-toggle-text {
+      display: none !important;
+    }
+  }
   .e3-helper-sidebar-toggle:active {
     background: var(--e3-launcher-bg) !important;
     transform: none !important;
