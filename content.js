@@ -1676,7 +1676,21 @@ style.textContent += `
     white-space: nowrap !important;
     appearance: none !important;
   }
-  .e3-helper-sidebar-toggle:hover,
+  /* Touch browsers may retain :hover after tapping. Only fine pointers expand on hover. */
+  @media (hover: hover) and (pointer: fine) {
+    .e3-helper-sidebar-toggle:hover {
+      width: 136px !important;
+      min-width: 136px !important;
+      max-width: 136px !important;
+      justify-content: flex-start !important;
+      padding: 0 10px !important;
+      gap: 8px !important;
+    }
+    .e3-helper-sidebar-toggle:hover .e3-helper-toggle-text {
+      display: inline !important;
+    }
+  }
+  /* Keep the label available when navigating with the keyboard. */
   .e3-helper-sidebar-toggle:focus-visible {
     width: 136px !important;
     min-width: 136px !important;
@@ -1684,8 +1698,6 @@ style.textContent += `
     justify-content: flex-start !important;
     padding: 0 10px !important;
     gap: 8px !important;
-    background: var(--e3-launcher-bg) !important;
-    transform: none !important;
   }
   .e3-helper-sidebar-toggle:active {
     background: var(--e3-launcher-bg) !important;
@@ -1708,7 +1720,6 @@ style.textContent += `
     font-size: 13px !important;
     font-weight: 600 !important;
   }
-  .e3-helper-sidebar-toggle:hover .e3-helper-toggle-text,
   .e3-helper-sidebar-toggle:focus-visible .e3-helper-toggle-text {
     display: inline !important;
   }
@@ -1724,7 +1735,8 @@ style.textContent += `
     .e3-helper-toast,
     .e3-helper-log-modal,
     #e3-helper-add-assignment-modal,
-    #e3-helper-changelog-modal {
+    #e3-helper-changelog-modal,
+    #e3-helper-syllabus-modal {
       display: none !important;
     }
   }
