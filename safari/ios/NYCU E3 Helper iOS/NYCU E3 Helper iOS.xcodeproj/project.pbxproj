@@ -52,6 +52,12 @@
 				<string>E30300000000000000000001</string>
 				<string>E30600000000000000000001</string>
 				<string>E30700000000000000000001</string>
+				<string>17A1020B8D7E2FF6D21EC27F</string>
+				<string>E99964FB564184FC4ADC97D7</string>
+				<string>067750890C01AD8ACC92263C</string>
+				<string>09BCF74C9283F996FE9382EE</string>
+				<string>B46C60265301A8D2C529D852</string>
+				<string>3442365E65343838C8EB8221</string>
 			</array>
 		</dict>
 		<key>473605F9306EC70900F0925A</key>
@@ -174,6 +180,12 @@
 				<string>E30300000000000000000002</string>
 				<string>E30600000000000000000002</string>
 				<string>E30700000000000000000002</string>
+				<string>B06BB90E77AC97798AA77AA0</string>
+				<string>31A058FECB248EBF7DCE18EC</string>
+				<string>70136CB4C252CDDE176D57AE</string>
+				<string>D2CC4C6031E06735A97C32D4</string>
+				<string>2A9985917E2B63A5FDB2886F</string>
+				<string>053F3F645EC49A48398ED53B</string>
 			</array>
 			<key>sourceTree</key>
 			<string>SOURCE_ROOT</string>
@@ -1348,6 +1360,114 @@
 			<string>PBXBuildFile</string>
 			<key>fileRef</key>
 			<string>E30700000000000000000002</string>
+		</dict>
+		<key>B06BB90E77AC97798AA77AA0</key>
+		<dict>
+			<key>isa</key>
+			<string>PBXFileReference</string>
+			<key>path</key>
+			<string>Resources/all-sites.js</string>
+			<key>name</key>
+			<string>all-sites.js</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>17A1020B8D7E2FF6D21EC27F</key>
+		<dict>
+			<key>isa</key>
+			<string>PBXBuildFile</string>
+			<key>fileRef</key>
+			<string>B06BB90E77AC97798AA77AA0</string>
+		</dict>
+		<key>31A058FECB248EBF7DCE18EC</key>
+		<dict>
+			<key>isa</key>
+			<string>PBXFileReference</string>
+			<key>path</key>
+			<string>Resources/all-sites-setting.js</string>
+			<key>name</key>
+			<string>all-sites-setting.js</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>E99964FB564184FC4ADC97D7</key>
+		<dict>
+			<key>isa</key>
+			<string>PBXBuildFile</string>
+			<key>fileRef</key>
+			<string>31A058FECB248EBF7DCE18EC</string>
+		</dict>
+		<key>70136CB4C252CDDE176D57AE</key>
+		<dict>
+			<key>isa</key>
+			<string>PBXFileReference</string>
+			<key>path</key>
+			<string>Resources/all-sites-bootstrap.js</string>
+			<key>name</key>
+			<string>all-sites-bootstrap.js</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>067750890C01AD8ACC92263C</key>
+		<dict>
+			<key>isa</key>
+			<string>PBXBuildFile</string>
+			<key>fileRef</key>
+			<string>70136CB4C252CDDE176D57AE</string>
+		</dict>
+		<key>D2CC4C6031E06735A97C32D4</key>
+		<dict>
+			<key>isa</key>
+			<string>PBXFileReference</string>
+			<key>path</key>
+			<string>Resources/all-sites-panel.html</string>
+			<key>name</key>
+			<string>all-sites-panel.html</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>09BCF74C9283F996FE9382EE</key>
+		<dict>
+			<key>isa</key>
+			<string>PBXBuildFile</string>
+			<key>fileRef</key>
+			<string>D2CC4C6031E06735A97C32D4</string>
+		</dict>
+		<key>2A9985917E2B63A5FDB2886F</key>
+		<dict>
+			<key>isa</key>
+			<string>PBXFileReference</string>
+			<key>path</key>
+			<string>Resources/all-sites-panel.js</string>
+			<key>name</key>
+			<string>all-sites-panel.js</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>B46C60265301A8D2C529D852</key>
+		<dict>
+			<key>isa</key>
+			<string>PBXBuildFile</string>
+			<key>fileRef</key>
+			<string>2A9985917E2B63A5FDB2886F</string>
+		</dict>
+		<key>053F3F645EC49A48398ED53B</key>
+		<dict>
+			<key>isa</key>
+			<string>PBXFileReference</string>
+			<key>path</key>
+			<string>Resources/all-sites-panel.css</string>
+			<key>name</key>
+			<string>all-sites-panel.css</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>3442365E65343838C8EB8221</key>
+		<dict>
+			<key>isa</key>
+			<string>PBXBuildFile</string>
+			<key>fileRef</key>
+			<string>053F3F645EC49A48398ED53B</string>
 		</dict>
 	</dict>
 	<key>rootObject</key>

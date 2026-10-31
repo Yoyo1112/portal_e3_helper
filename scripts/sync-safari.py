@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Copy shared extension sources into the macOS and iPad Xcode projects."""
+import hashlib
 import json
 import plistlib
 import re
@@ -17,8 +18,61 @@ OPTIONAL_SIDEBAR_FILES = ['all-sites.js', 'all-sites-setting.js', 'all-sites-boo
                           'all-sites-panel.html', 'all-sites-panel.js', 'all-sites-panel.css']
 FILES += [name for name in OPTIONAL_SIDEBAR_FILES if (ROOT / name).exists()]
 
+def optional_resource_ids(name):
+    return tuple(hashlib.sha256(f'e3-optional:{kind}:{name}'.encode()).hexdigest()[:24].upper()
+                 for kind in ('file', 'build'))
+
+
+def sync_optional_resource_entries(source):
+    """Follow background.js into its group/build phase, preserving both project formats."""
+    available = [name for name in OPTIONAL_SIDEBAR_FILES if (ROOT / name).exists()]
+    if source.startswith('<?xml'):
+        data = plistlib.loads(source.encode())
+        objects = data['objects']
+        background = next(key for key, obj in objects.items()
+                          if obj.get('isa') == 'PBXFileReference' and obj.get('path') == 'Resources/background.js')
+        background_build = next(key for key, obj in objects.items()
+                                if obj.get('isa') == 'PBXBuildFile' and obj.get('fileRef') == background)
+        group = next(obj for obj in objects.values() if background in obj.get('children', []))
+        phase = next(obj for obj in objects.values() if background_build in obj.get('files', []))
+        for name in OPTIONAL_SIDEBAR_FILES:
+            file_id, build_id = optional_resource_ids(name)
+            objects.pop(file_id, None); objects.pop(build_id, None)
+            group['children'] = [key for key in group['children'] if key != file_id]
+            phase['files'] = [key for key in phase['files'] if key != build_id]
+            if name in available:
+                objects[file_id] = dict(isa='PBXFileReference', path=f'Resources/{name}', name=name,
+                                       sourceTree='<group>')
+                objects[build_id] = dict(isa='PBXBuildFile', fileRef=file_id)
+                group['children'].append(file_id); phase['files'].append(build_id)
+        return plistlib.dumps(data, sort_keys=False).decode()
+
+    # The macOS project uses OpenStep syntax. Insert beside the existing background
+    # resource so the extension's group/phase is selected, never the host app's.
+    for name in OPTIONAL_SIDEBAR_FILES:
+        for key in optional_resource_ids(name):
+            source = re.sub(r'^.*' + key + r'.*\n', '', source, flags=re.M)
+    for name in available:
+        file_id, build_id = optional_resource_ids(name)
+        entries = [
+            (r'^.* /\* background.js \*/ = \{isa = PBXFileReference;.*$',
+             f'\t\t{file_id} /* {name} */ = {{isa = PBXFileReference; name = "{name}"; path = "Resources/{name}"; sourceTree = "<group>"; }};'),
+            (r'^.* /\* background.js in Resources \*/ = \{isa = PBXBuildFile;.*$',
+             f'\t\t{build_id} /* {name} in Resources */ = {{isa = PBXBuildFile; fileRef = {file_id} /* {name} */; }};'),
+            (r'^\s*[A-F0-9]+ /\* background.js \*/,\s*$', f'\t\t\t\t{file_id} /* {name} */,'),
+            (r'^\s*[A-F0-9]+ /\* background.js in Resources \*/,\s*$', f'\t\t\t\t{build_id} /* {name} in Resources */,')]
+        for pattern, entry in entries:
+            source, count = re.subn(pattern, lambda match: entry + '\n' + match[0], source, flags=re.M)
+            if count != 1:
+                raise ValueError(f'Expected one background resource anchor for {name}, found {count}')
+    return source
+
+
 def sync_project(project, extension, native_notifications):
     resources = project / extension / 'Resources'
+    for name in OPTIONAL_SIDEBAR_FILES:
+        if name not in FILES:
+            (resources / name).unlink(missing_ok=True)
     for name in FILES:
         source, target = ROOT / name, resources / name
         if source.is_dir():
@@ -39,7 +93,8 @@ def sync_project(project, extension, native_notifications):
     manifest['host_permissions'] = [p for p in manifest['host_permissions'] if 'localhost' not in p]
     (resources / 'manifest.json').write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + '\n')
     pbx = next(project.glob('*.xcodeproj')) / 'project.pbxproj'
-    source = pbx.read_text()
+    source = sync_optional_resource_entries(pbx.read_text())
+    pbx.write_text(source)
     if source.startswith('<?xml'):
         data = plistlib.loads(pbx.read_bytes())
         for obj in data['objects'].values():

@@ -115,7 +115,8 @@ with tempfile.TemporaryDirectory() as directory:
     (project / 'Extension/Resources').mkdir(parents=True)
     pbx = project / 'Safari.xcodeproj/project.pbxproj'
     pbx.parent.mkdir()
-    pbx.write_bytes(plistlib.dumps({'objects': {}}))
+    template = source / 'safari/ios/NYCU E3 Helper iOS'
+    shutil.copy2(next(template.glob('*.xcodeproj')) / 'project.pbxproj', pbx)
     sync['sync_project'].__globals__['ROOT'] = root
     sync['sync_project'](project, 'Extension', False)
     assert (project / 'Extension/Resources/CHANGELOG.md').read_bytes() == (source / 'CHANGELOG.md').read_bytes()

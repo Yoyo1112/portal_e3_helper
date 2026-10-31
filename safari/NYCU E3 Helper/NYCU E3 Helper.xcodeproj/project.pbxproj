@@ -22,6 +22,12 @@
 		47019761306E4722001631FD /* NYCU E3 Helper Extension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 47019760306E4722001631FD /* NYCU E3 Helper Extension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		47019766306E4722001631FD /* SafariWebExtensionHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47019765306E4722001631FD /* SafariWebExtensionHandler.swift */; };
 		4701977D306E4722001631FD /* notification-settings.js in Resources */ = {isa = PBXBuildFile; fileRef = 47019772306E4722001631FD /* notification-settings.js */; };
+		17A1020B8D7E2FF6D21EC27F /* all-sites.js in Resources */ = {isa = PBXBuildFile; fileRef = B06BB90E77AC97798AA77AA0 /* all-sites.js */; };
+		E99964FB564184FC4ADC97D7 /* all-sites-setting.js in Resources */ = {isa = PBXBuildFile; fileRef = 31A058FECB248EBF7DCE18EC /* all-sites-setting.js */; };
+		067750890C01AD8ACC92263C /* all-sites-bootstrap.js in Resources */ = {isa = PBXBuildFile; fileRef = 70136CB4C252CDDE176D57AE /* all-sites-bootstrap.js */; };
+		09BCF74C9283F996FE9382EE /* all-sites-panel.html in Resources */ = {isa = PBXBuildFile; fileRef = D2CC4C6031E06735A97C32D4 /* all-sites-panel.html */; };
+		B46C60265301A8D2C529D852 /* all-sites-panel.js in Resources */ = {isa = PBXBuildFile; fileRef = 2A9985917E2B63A5FDB2886F /* all-sites-panel.js */; };
+		3442365E65343838C8EB8221 /* all-sites-panel.css in Resources */ = {isa = PBXBuildFile; fileRef = 053F3F645EC49A48398ED53B /* all-sites-panel.css */; };
 		4701977E306E4722001631FD /* background.js in Resources */ = {isa = PBXBuildFile; fileRef = 47019773306E4722001631FD /* background.js */; };
 		4701977F306E4722001631FD /* jszip.min.js in Resources */ = {isa = PBXBuildFile; fileRef = 47019774306E4722001631FD /* jszip.min.js */; };
 		47019780306E4722001631FD /* 128.png in Resources */ = {isa = PBXBuildFile; fileRef = 47019775306E4722001631FD /* 128.png */; };
@@ -75,6 +81,12 @@
 		47019765306E4722001631FD /* SafariWebExtensionHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SafariWebExtensionHandler.swift; sourceTree = "<group>"; };
 		47019767306E4722001631FD /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		47019772306E4722001631FD /* notification-settings.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; name = "notification-settings.js"; path = "Resources/notification-settings.js"; sourceTree = "<group>"; };
+		B06BB90E77AC97798AA77AA0 /* all-sites.js */ = {isa = PBXFileReference; name = "all-sites.js"; path = "Resources/all-sites.js"; sourceTree = "<group>"; };
+		31A058FECB248EBF7DCE18EC /* all-sites-setting.js */ = {isa = PBXFileReference; name = "all-sites-setting.js"; path = "Resources/all-sites-setting.js"; sourceTree = "<group>"; };
+		70136CB4C252CDDE176D57AE /* all-sites-bootstrap.js */ = {isa = PBXFileReference; name = "all-sites-bootstrap.js"; path = "Resources/all-sites-bootstrap.js"; sourceTree = "<group>"; };
+		D2CC4C6031E06735A97C32D4 /* all-sites-panel.html */ = {isa = PBXFileReference; name = "all-sites-panel.html"; path = "Resources/all-sites-panel.html"; sourceTree = "<group>"; };
+		2A9985917E2B63A5FDB2886F /* all-sites-panel.js */ = {isa = PBXFileReference; name = "all-sites-panel.js"; path = "Resources/all-sites-panel.js"; sourceTree = "<group>"; };
+		053F3F645EC49A48398ED53B /* all-sites-panel.css */ = {isa = PBXFileReference; name = "all-sites-panel.css"; path = "Resources/all-sites-panel.css"; sourceTree = "<group>"; };
 		47019773306E4722001631FD /* background.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; name = background.js; path = Resources/background.js; sourceTree = "<group>"; };
 		47019774306E4722001631FD /* jszip.min.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; name = jszip.min.js; path = Resources/jszip.min.js; sourceTree = "<group>"; };
 		47019775306E4722001631FD /* 128.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = 128.png; path = Resources/128.png; sourceTree = "<group>"; };
@@ -158,6 +170,12 @@
 			children = (
 				E30100000000000000000002 /* desktop-notifications.js */,
                 47019772306E4722001631FD /* notification-settings.js */,
+				B06BB90E77AC97798AA77AA0 /* all-sites.js */,
+				31A058FECB248EBF7DCE18EC /* all-sites-setting.js */,
+				70136CB4C252CDDE176D57AE /* all-sites-bootstrap.js */,
+				D2CC4C6031E06735A97C32D4 /* all-sites-panel.html */,
+				2A9985917E2B63A5FDB2886F /* all-sites-panel.js */,
+				053F3F645EC49A48398ED53B /* all-sites-panel.css */,
 				47019773306E4722001631FD /* background.js */,
 				47019774306E4722001631FD /* jszip.min.js */,
 				47019775306E4722001631FD /* 128.png */,
@@ -267,6 +285,12 @@
 			isa = PBXResourcesBuildPhase;
 			files = (
 				47019785306E4722001631FD /* _locales in Resources */,
+				17A1020B8D7E2FF6D21EC27F /* all-sites.js in Resources */,
+				E99964FB564184FC4ADC97D7 /* all-sites-setting.js in Resources */,
+				067750890C01AD8ACC92263C /* all-sites-bootstrap.js in Resources */,
+				09BCF74C9283F996FE9382EE /* all-sites-panel.html in Resources */,
+				B46C60265301A8D2C529D852 /* all-sites-panel.js in Resources */,
+				3442365E65343838C8EB8221 /* all-sites-panel.css in Resources */,
 				4701977E306E4722001631FD /* background.js in Resources */,
 				47019780306E4722001631FD /* 128.png in Resources */,
 				4701977F306E4722001631FD /* jszip.min.js in Resources */,
