@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+### Added
+- Add an opt-in floating button on all websites for Chrome (off by default). Request optional site access only when enabled, show synced coursework on Google and other ordinary pages, and hide/unregister it when disabled.
+
 ### Fixed
 - Keep pending exam cards and counts in sync between Coursework and Today's digest, including hidden tabs after accepting or dismissing a suggestion.
 - Retain overdue coursework edited during sync and apply delayed course-detail responses to the current saved record.
