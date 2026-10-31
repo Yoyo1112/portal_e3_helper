@@ -145,7 +145,23 @@ const path = require('node:path');
     assert.equal(await touchPage.locator('.e3-helper-sidebar').evaluate(el => el.classList.contains('expanded')), false, 'touch closes sidebar');
     const touchWidth = await touchLauncher.evaluate(el => el.getBoundingClientRect().width);
     assert.ok(touchWidth >= 40 && touchWidth <= 50, 'touch leaves the launcher compact, even after tap');
-    assert.equal(await touchLauncher.locator('.e3-helper-toggle-text').evaluate(el => getComputedStyle(el).display), 'none', 'touch keeps label folded');
+    const touchDetails = await touchLauncher.evaluate(el => {
+      const text = el.querySelector('.e3-helper-toggle-text');
+      const style = getComputedStyle(text);
+      const rect = text.getBoundingClientRect();
+      const parent = getComputedStyle(el);
+      return {
+        display: style.display, visibility: style.visibility, opacity: style.opacity,
+        rect: { x: rect.x, y: rect.y, width: rect.width, height: rect.height },
+        parent: { width: parent.width, display: parent.display, overflow: parent.overflow },
+        focusVisible: el.matches(':focus-visible'),
+        hover: el.matches(':hover'),
+        text: text.outerHTML,
+        css: [...document.querySelectorAll('style')].flatMap(s => s.textContent.includes('.e3-helper-toggle-text') ? [s.textContent.match(/\\.e3-helper-sidebar-toggle \\.e3-helper-toggle-text \\{[^}]+\\}/)?.[0]?.slice(0,300)] : []).filter(Boolean)
+      };
+    });
+    console.log('TOUCH_STYLE_DEBUG', JSON.stringify(touchDetails));
+    assert.equal(touchDetails.display, 'none', 'touch keeps label folded');
     await touchLauncher.tap();
     assert.ok(await touchPage.locator('.e3-helper-sidebar').evaluate(el => el.classList.contains('expanded')), 'touch reopens sidebar');
     assert.deepEqual(touchErrors, []);
