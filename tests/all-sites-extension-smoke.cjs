@@ -36,6 +36,22 @@ const assert = require('node:assert/strict');
     });
     const google = await context.newPage(); await google.goto('https://www.google.com/');
     const host = google.locator('#e3-helper-all-sites-host');
+    await host.waitFor();
+    const staleHost = await host.elementHandle();
+    // Model an extension update: its isolated-world marker is reset while old DOM remains.
+    await worker.evaluate(async () => {
+      const tabs = await chrome.tabs.query({ url: 'https://www.google.com/*' });
+      await chrome.scripting.executeScript({ target: { tabId: tabs[0].id }, func: () => { delete globalThis.E3AllSitesLauncher; } });
+      await chrome.scripting.executeScript({ target: { tabId: tabs[0].id }, files: ['all-sites-bootstrap.js'] });
+    });
+    await google.waitForTimeout(100);
+    assert.equal(await host.count(), 1, 'Reinjection after namespace reset replaces the stale launcher');
+    assert.equal(await staleHost.evaluate(node => node.isConnected), false, 'Old closed-shadow launcher is removed');
+    await worker.evaluate(async () => {
+      const tabs = await chrome.tabs.query({ url: 'https://www.google.com/*' });
+      await chrome.scripting.executeScript({ target: { tabId: tabs[0].id }, files: ['all-sites-bootstrap.js'] });
+    });
+    assert.equal(await host.count(), 1, 'Repeated injection keeps exactly one live launcher');
 
     const options = await context.newPage(); await options.goto(new URL('notification-settings.html', worker.url()).href);
     const setting = options.locator('#all-sites-setting input');
@@ -82,6 +98,7 @@ const assert = require('node:assert/strict');
     await google.mouse.move(beforeDrag.x + 23, beforeDrag.y + 193, { steps: 8 });
     await google.mouse.up();
     assert.equal((await host.boundingBox()).y, beforeDrag.y + 170, 'Mouse drag moves the launcher');
+    assert.equal(await host.count(), 1, 'Dragging cannot reveal an old duplicate launcher');
     assert.equal(google.frames().length, 1, 'Dragging must not open the panel');
     assert.equal(await worker.evaluate(async () => (await chrome.storage.local.get('allSitesLauncherTop')).allSitesLauncherTop), beforeDrag.y + 170);
     await google.reload();
@@ -143,6 +160,6 @@ const assert = require('node:assert/strict');
     // Campus UI remains enabled; avoid hostile button styling in this campus fixture.
     const campus = await context.newPage(); await campus.goto('https://portal.nycu.edu.tw/');
     await campus.locator('.e3-helper-sidebar-toggle').waitFor();
-    console.log('PASS: real optional grant/revoke, 46px hostile-CSS launcher, persisted mouse/touch drag and keyboard reopen, no private host DOM, extension-origin settings isolation, opt-out teardown, print, campus unchanged');
+    console.log('PASS: real optional grant/revoke, 46px hostile-CSS launcher, stale-host cleanup, persisted mouse/touch drag and keyboard reopen, no private host DOM, extension-origin settings isolation, opt-out teardown, print, campus unchanged');
   } finally { await context?.close(); fs.rmSync(temp, { recursive: true, force: true }); }
 })().catch(error => { console.error(error); process.exitCode = 1; });

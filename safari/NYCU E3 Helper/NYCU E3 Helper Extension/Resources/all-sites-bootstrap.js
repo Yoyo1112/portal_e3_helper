@@ -8,7 +8,8 @@
     launcherTop = clampTop(launcherTop);
     if (host && !frame) host.style.setProperty('top', `${launcherTop}px`, 'important');
   };
-  const clearLegacyUI = () => document.querySelectorAll('.e3-helper-sidebar, .e3-helper-sidebar-toggle, .e3-helper-log-modal, .e3-helper-toast, #e3-helper-add-assignment-modal, #e3-helper-changelog-modal').forEach(node => node.remove());
+  // Extension updates reset the isolated world but can leave its closed-shadow host in open tabs.
+  const clearLegacyUI = () => document.querySelectorAll('#e3-helper-all-sites-host, .e3-helper-sidebar, .e3-helper-sidebar-toggle, .e3-helper-log-modal, .e3-helper-toast, #e3-helper-add-assignment-modal, #e3-helper-changelog-modal').forEach(node => node.remove());
   const cleanup = () => {
     disposed = true;
     host?.remove();
