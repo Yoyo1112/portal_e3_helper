@@ -22,6 +22,7 @@
 		47019761306E4722001631FD /* NYCU E3 Helper Extension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 47019760306E4722001631FD /* NYCU E3 Helper Extension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		47019766306E4722001631FD /* SafariWebExtensionHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47019765306E4722001631FD /* SafariWebExtensionHandler.swift */; };
 		4701977D306E4722001631FD /* notification-settings.js in Resources */ = {isa = PBXBuildFile; fileRef = 47019772306E4722001631FD /* notification-settings.js */; };
+		CC23602046D296397BA1FB9C /* report-detection.js in Resources */ = {isa = PBXBuildFile; fileRef = 2B8A63C3200539813A780ABF /* report-detection.js */; };
 		17A1020B8D7E2FF6D21EC27F /* all-sites.js in Resources */ = {isa = PBXBuildFile; fileRef = B06BB90E77AC97798AA77AA0 /* all-sites.js */; };
 		E99964FB564184FC4ADC97D7 /* all-sites-setting.js in Resources */ = {isa = PBXBuildFile; fileRef = 31A058FECB248EBF7DCE18EC /* all-sites-setting.js */; };
 		067750890C01AD8ACC92263C /* all-sites-bootstrap.js in Resources */ = {isa = PBXBuildFile; fileRef = 70136CB4C252CDDE176D57AE /* all-sites-bootstrap.js */; };
@@ -81,6 +82,7 @@
 		47019765306E4722001631FD /* SafariWebExtensionHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SafariWebExtensionHandler.swift; sourceTree = "<group>"; };
 		47019767306E4722001631FD /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		47019772306E4722001631FD /* notification-settings.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; name = "notification-settings.js"; path = "Resources/notification-settings.js"; sourceTree = "<group>"; };
+		2B8A63C3200539813A780ABF /* report-detection.js */ = {isa = PBXFileReference; name = "report-detection.js"; path = "Resources/report-detection.js"; sourceTree = "<group>"; };
 		B06BB90E77AC97798AA77AA0 /* all-sites.js */ = {isa = PBXFileReference; name = "all-sites.js"; path = "Resources/all-sites.js"; sourceTree = "<group>"; };
 		31A058FECB248EBF7DCE18EC /* all-sites-setting.js */ = {isa = PBXFileReference; name = "all-sites-setting.js"; path = "Resources/all-sites-setting.js"; sourceTree = "<group>"; };
 		70136CB4C252CDDE176D57AE /* all-sites-bootstrap.js */ = {isa = PBXFileReference; name = "all-sites-bootstrap.js"; path = "Resources/all-sites-bootstrap.js"; sourceTree = "<group>"; };
@@ -170,6 +172,7 @@
 			children = (
 				E30100000000000000000002 /* desktop-notifications.js */,
                 47019772306E4722001631FD /* notification-settings.js */,
+				2B8A63C3200539813A780ABF /* report-detection.js */,
 				B06BB90E77AC97798AA77AA0 /* all-sites.js */,
 				31A058FECB248EBF7DCE18EC /* all-sites-setting.js */,
 				70136CB4C252CDDE176D57AE /* all-sites-bootstrap.js */,
@@ -285,6 +288,7 @@
 			isa = PBXResourcesBuildPhase;
 			files = (
 				47019785306E4722001631FD /* _locales in Resources */,
+				CC23602046D296397BA1FB9C /* report-detection.js in Resources */,
 				17A1020B8D7E2FF6D21EC27F /* all-sites.js in Resources */,
 				E99964FB564184FC4ADC97D7 /* all-sites-setting.js in Resources */,
 				067750890C01AD8ACC92263C /* all-sites-bootstrap.js in Resources */,

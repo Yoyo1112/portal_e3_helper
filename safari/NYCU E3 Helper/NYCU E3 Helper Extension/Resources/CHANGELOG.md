@@ -7,6 +7,13 @@
 
 ## [Unreleased]
 
+### Added
+- 課業加入報告類型，整合手動管理、類型篩選、今日報告與提醒；共用考試的課綱／公告及 syllabus 掃描，發表與書面繳交分別確認，保留組別與日期來源。
+- Add report coursework with separate presentation/submission milestones, shared exam scanning, confirmation, local Word and AI PDF reading, and existing E3 coursework conversion.
+
+### Fixed
+- Bind coursework controls before awaiting notification storage so concurrent list refreshes cannot attach duplicate completion handlers.
+
 ### Fixed
 - Isolate the optional all-websites launcher from host CSS and hide it when printing. Create private coursework/settings only on click in an extension-origin iframe; destroy it and revoke broad optional host access on opt-out.
 
@@ -26,6 +33,13 @@
 - Avoid moved quiz ID collisions and rotate exam source scan batches fairly.
 
 ## [Unreleased]
+
+### Added
+- 課業加入報告類型，整合手動管理、類型篩選、今日報告與提醒；共用考試的課綱／公告及 syllabus 掃描，發表與書面繳交分別確認，保留組別與日期來源。
+- Add report coursework with separate presentation/submission milestones, shared exam scanning, confirmation, local Word and AI PDF reading, and existing E3 coursework conversion.
+
+### Fixed
+- Bind coursework controls before awaiting notification storage so concurrent list refreshes cannot attach duplicate completion handlers.
 
 ### ✨ 新增 (Added)
 - 「課業」整合作業與考試，支援類型篩選、手動考試，以及從課綱、公告／信件、syllabus PDF／Word 產生待確認建議。

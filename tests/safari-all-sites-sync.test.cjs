@@ -37,22 +37,23 @@ with tempfile.TemporaryDirectory() as directory:
             output = json.loads((resources/'manifest.json').read_text())
             for key in ['optional_permissions', 'optional_host_permissions', 'web_accessible_resources']: assert key not in output
             text = pbx.read_text()
-            for name in original.OPTIONAL_SIDEBAR_FILES:
-                assert (resources/name).exists() == available
+            for name in original.OPTIONAL_SIDEBAR_FILES + original.RESOURCE_SCRIPTS:
+                expected = available or name in original.RESOURCE_SCRIPTS
+                assert (resources/name).exists() == expected
                 # IDs must be reachable from a build phase and a group, not just declared.
                 file_id, build_id = [hashlib.sha256(f'e3-optional:{kind}:{name}'.encode()).hexdigest()[:24].upper() for kind in ('file', 'build')]
                 if text.startswith('<?xml'):
                     objects = plistlib.loads(pbx.read_bytes())['objects']
-                    assert (file_id in objects) == available
-                    assert (build_id in objects) == available
-                    if available:
+                    assert (file_id in objects) == expected
+                    assert (build_id in objects) == expected
+                    if expected:
                         assert objects[build_id]['fileRef'] == file_id
                         assert any(build_id in obj.get('files', []) and obj['isa'] == 'PBXResourcesBuildPhase' for obj in objects.values())
                         assert any(file_id in obj.get('children', []) for obj in objects.values())
                 else:
-                    assert text.count(file_id) == (3 if available else 0)
-                    assert text.count(build_id) == (2 if available else 0)
-                    if available:
+                    assert text.count(file_id) == (3 if expected else 0)
+                    assert text.count(build_id) == (2 if expected else 0)
+                    if expected:
                         phases = text.split('/* Begin PBXResourcesBuildPhase section */')[1].split('/* End PBXResourcesBuildPhase section */')[0]
                         assert build_id in phases
                         groups = text.split('/* Begin PBXGroup section */')[1].split('/* End PBXGroup section */')[0]

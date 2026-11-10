@@ -46,7 +46,7 @@ test('Safari package omits unsupported permissions and matches shared sources', 
   assert.ok(!manifest.permissions.includes('notifications'));
   assert.ok(manifest.permissions.includes('nativeMessaging'));
   assert.ok(!('open_in_tab' in manifest.options_ui));
-  for (const name of ['content.js', 'background.js', 'desktop-notifications.js', 'notification-api.js', 'notification-engine.js', 'notification-settings.js']) {
+  for (const name of ['report-detection.js', 'content.js', 'background.js', 'desktop-notifications.js', 'notification-api.js', 'notification-engine.js', 'notification-settings.js']) {
     assert.equal(fs.readFileSync(path.join(resources, name), 'utf8'), fs.readFileSync(path.join(root, name), 'utf8'));
   }
 });
@@ -57,7 +57,7 @@ test('iPad package keeps common sources but does not advertise native desktop no
     assert.ok(!manifest.permissions.includes(permission));
   }
   assert.equal(manifest.version, JSON.parse(fs.readFileSync(path.join(root, 'manifest.json'))).version);
-  for (const name of ['content.js', 'background.js', 'desktop-notifications.js', 'notification-api.js', 'notification-engine.js', 'notification-settings.js']) {
+  for (const name of ['report-detection.js', 'content.js', 'background.js', 'desktop-notifications.js', 'notification-api.js', 'notification-engine.js', 'notification-settings.js']) {
     assert.equal(fs.readFileSync(path.join(resources, name), 'utf8'), fs.readFileSync(path.join(root, name), 'utf8'));
   }
 });
