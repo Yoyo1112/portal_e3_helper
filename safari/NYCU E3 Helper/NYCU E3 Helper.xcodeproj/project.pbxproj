@@ -22,6 +22,7 @@
 		47019761306E4722001631FD /* NYCU E3 Helper Extension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 47019760306E4722001631FD /* NYCU E3 Helper Extension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		47019766306E4722001631FD /* SafariWebExtensionHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47019765306E4722001631FD /* SafariWebExtensionHandler.swift */; };
 		4701977D306E4722001631FD /* notification-settings.js in Resources */ = {isa = PBXBuildFile; fileRef = 47019772306E4722001631FD /* notification-settings.js */; };
+		B38DBAC15E486F56884760DC /* report-detection.js in Resources */ = {isa = PBXBuildFile; fileRef = 1923E7B803DEF2F3BAA7749B /* report-detection.js */; };
 		4701977E306E4722001631FD /* background.js in Resources */ = {isa = PBXBuildFile; fileRef = 47019773306E4722001631FD /* background.js */; };
 		4701977F306E4722001631FD /* jszip.min.js in Resources */ = {isa = PBXBuildFile; fileRef = 47019774306E4722001631FD /* jszip.min.js */; };
 		47019780306E4722001631FD /* 128.png in Resources */ = {isa = PBXBuildFile; fileRef = 47019775306E4722001631FD /* 128.png */; };
@@ -75,6 +76,7 @@
 		47019765306E4722001631FD /* SafariWebExtensionHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SafariWebExtensionHandler.swift; sourceTree = "<group>"; };
 		47019767306E4722001631FD /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		47019772306E4722001631FD /* notification-settings.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; name = "notification-settings.js"; path = "Resources/notification-settings.js"; sourceTree = "<group>"; };
+		1923E7B803DEF2F3BAA7749B /* report-detection.js */ = {isa = PBXFileReference; name = "report-detection.js"; path = "Resources/report-detection.js"; sourceTree = "<group>"; };
 		47019773306E4722001631FD /* background.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; name = background.js; path = Resources/background.js; sourceTree = "<group>"; };
 		47019774306E4722001631FD /* jszip.min.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; name = jszip.min.js; path = Resources/jszip.min.js; sourceTree = "<group>"; };
 		47019775306E4722001631FD /* 128.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = 128.png; path = Resources/128.png; sourceTree = "<group>"; };
@@ -158,6 +160,7 @@
 			children = (
 				E30100000000000000000002 /* desktop-notifications.js */,
                 47019772306E4722001631FD /* notification-settings.js */,
+				1923E7B803DEF2F3BAA7749B /* report-detection.js */,
 				47019773306E4722001631FD /* background.js */,
 				47019774306E4722001631FD /* jszip.min.js */,
 				47019775306E4722001631FD /* 128.png */,
@@ -267,6 +270,7 @@
 			isa = PBXResourcesBuildPhase;
 			files = (
 				47019785306E4722001631FD /* _locales in Resources */,
+				B38DBAC15E486F56884760DC /* report-detection.js in Resources */,
 				4701977E306E4722001631FD /* background.js in Resources */,
 				47019780306E4722001631FD /* 128.png in Resources */,
 				4701977F306E4722001631FD /* jszip.min.js in Resources */,

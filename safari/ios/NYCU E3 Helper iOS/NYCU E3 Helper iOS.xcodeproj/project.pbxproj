@@ -52,6 +52,7 @@
 				<string>E30300000000000000000001</string>
 				<string>E30600000000000000000001</string>
 				<string>E30700000000000000000001</string>
+				<string>B38DBAC15E486F56884760DC</string>
 			</array>
 		</dict>
 		<key>473605F9306EC70900F0925A</key>
@@ -174,6 +175,7 @@
 				<string>E30300000000000000000002</string>
 				<string>E30600000000000000000002</string>
 				<string>E30700000000000000000002</string>
+				<string>1923E7B803DEF2F3BAA7749B</string>
 			</array>
 			<key>sourceTree</key>
 			<string>SOURCE_ROOT</string>
@@ -1348,6 +1350,24 @@
 			<string>PBXBuildFile</string>
 			<key>fileRef</key>
 			<string>E30700000000000000000002</string>
+		</dict>
+		<key>1923E7B803DEF2F3BAA7749B</key>
+		<dict>
+			<key>isa</key>
+			<string>PBXFileReference</string>
+			<key>path</key>
+			<string>Resources/report-detection.js</string>
+			<key>name</key>
+			<string>report-detection.js</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>B38DBAC15E486F56884760DC</key>
+		<dict>
+			<key>isa</key>
+			<string>PBXBuildFile</string>
+			<key>fileRef</key>
+			<string>1923E7B803DEF2F3BAA7749B</string>
 		</dict>
 	</dict>
 	<key>rootObject</key>

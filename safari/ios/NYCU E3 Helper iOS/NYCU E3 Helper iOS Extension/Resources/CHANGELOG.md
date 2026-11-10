@@ -7,6 +7,13 @@
 
 ## [Unreleased]
 
+### Added
+- 課業加入報告類型，整合手動管理、類型篩選、今日報告與提醒；共用考試的課綱／公告及 syllabus 掃描，發表與書面繳交分別確認，保留組別與日期來源。
+- Add report coursework with separate presentation/submission milestones, shared exam scanning, confirmation, local Word and AI PDF reading, and existing E3 coursework conversion.
+
+### Fixed
+- Bind coursework controls before awaiting notification storage so concurrent list refreshes cannot attach duplicate completion handlers.
+
 ### Fixed
 - Keep pending exam cards and counts in sync between Coursework and Today's digest, including hidden tabs after accepting or dismissing a suggestion.
 - Choose an authenticated Safari E3 host even when the active tab on the other host is signed out or unreachable.
